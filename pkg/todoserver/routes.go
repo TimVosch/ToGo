@@ -40,7 +40,8 @@ func (s *Server) handleCreateTodo() http.HandlerFunc {
 		// Insert
 		created, err := s.db.InsertTodo(todo)
 		if err != nil {
-			// Error!
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		json.NewEncoder(w).Encode(created)
@@ -55,6 +56,7 @@ func (s *Server) handleDeleteTodo() http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 }
