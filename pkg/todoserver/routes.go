@@ -13,8 +13,16 @@ func (s *Server) handleHealthCheck() http.HandlerFunc {
 	}
 }
 
+func (s *Server) handleGetTodos() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		todos := s.db.GetTodosForUser(0)
+		json.NewEncoder(w).Encode(todos)
+	}
+}
+
 func setRoutes(s *Server) {
 	r := s.router
 
 	r.HandleFunc("/health", s.handleHealthCheck()).Methods("GET")
+	r.HandleFunc("/todos/{id:[0-9]+}", s.handleGetTodos()).Methods("GET")
 }

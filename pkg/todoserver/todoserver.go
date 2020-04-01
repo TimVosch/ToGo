@@ -13,6 +13,7 @@ import (
 type Server struct {
 	httpServer *http.Server
 	router     *mux.Router
+	db         TodoDAL
 }
 
 // NewServer creates a new server
@@ -23,11 +24,13 @@ func NewServer() *Server {
 		Addr:    ":3000",
 		Handler: router,
 	}
+	db := NewMemoryDB()
 
 	// Build Server struct
 	s := &Server{
 		httpServer,
 		router,
+		db,
 	}
 
 	setRoutes(s)
