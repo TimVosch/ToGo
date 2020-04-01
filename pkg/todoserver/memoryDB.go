@@ -19,14 +19,25 @@ func NewMemoryDB() *MemoryDB {
 	}
 }
 
+// GetTodoByID ...
+func (db *MemoryDB) GetTodoByID(id int) *TodoEntry {
+	// Try to find the todo
+	for _, v := range db.todos {
+		if v.ID == id {
+			return &v
+		}
+	}
+	return nil
+}
+
 // GetTodosForUser ...
 func (db *MemoryDB) GetTodosForUser(id int) []TodoEntry {
 	return db.todos
 }
 
 // InsertTodo ...
-func (db *MemoryDB) InsertTodo(todo TodoEntry) error {
+func (db *MemoryDB) InsertTodo(todo TodoEntry) (*TodoEntry, error) {
 	todo.ID = db.nextID()
 	db.todos = append(db.todos, todo)
-	return nil
+	return &todo, nil
 }
