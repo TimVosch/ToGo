@@ -1,15 +1,18 @@
 package userserver
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/timvosch/togo/pkg/api"
 )
 
 func (us *UserServer) handleHealthCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]bool{
+		res := api.NewResponse(w)
+		res.Body = map[string]interface{}{
 			"healthy": true,
-		})
+		}
+		res.Send()
 	}
 }
 

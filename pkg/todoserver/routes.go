@@ -5,21 +5,25 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/timvosch/togo/pkg/api"
+
 	"github.com/gorilla/mux"
 )
 
 func (s *TodoServer) handleHealthCheck() http.HandlerFunc {
 	// Create response
 	return func(w http.ResponseWriter, r *http.Request) {
-		response := map[string]bool{"healthy": true}
-		json.NewEncoder(w).Encode(response)
+		res := api.NewResponse(w)
+		res.Body = map[string]interface{}{"healthy": true}
+		res.Send()
 	}
 }
 
 func (s *TodoServer) handleGetTodos() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		todos := s.db.GetTodosForUser(0)
-		json.NewEncoder(w).Encode(todos)
+		res := api.NewResponse(w)
+		res.Body = s.db.GetTodosForUser(0)
+		res.Send()
 	}
 }
 
@@ -27,8 +31,9 @@ func (s *TodoServer) handleGetTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
-		todo := s.db.GetTodoByID(int(id))
-		json.NewEncoder(w).Encode(todo)
+		res := api.NewResponse(w)
+		res.Body = s.db.GetTodoByID(int(id))
+		res.Send()
 	}
 }
 
@@ -37,27 +42,38 @@ func (s *TodoServer) handleCreateTodo() http.HandlerFunc {
 		var todo TodoEntry
 		json.NewDecoder(r.Body).Decode(&todo)
 
+		res := api.NewResponse(w)
+
 		// Insert
 		created, err := s.db.InsertTodo(todo)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			res.Status = http.StatusInternalServerError
+			res.Send()
 			return
 		}
 
-		json.NewEncoder(w).Encode(created)
+		res.Body = created
+		res.Send()
 	}
 }
 
 func (s *TodoServer) handleDeleteTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		res := api.NewResponse(w)
 		params := mux.Vars(r)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
 		err := s.db.DeleteTodo(int(id))
 
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
+			res.Send()
+			res.Status = http.StatusNotFound
 			return
 		}
+
+		res.Body = map[string]string{
+			"message": "Todo has been removed",
+		}
+		res.Send()
 	}
 }
 
