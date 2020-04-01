@@ -47,11 +47,24 @@ func (s *Server) handleCreateTodo() http.HandlerFunc {
 	}
 }
 
+func (s *Server) handleDeleteTodo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		id, _ := strconv.ParseInt(params["id"], 10, 0)
+		err := s.db.DeleteTodo(int(id))
+
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+}
+
 func setRoutes(s *Server) {
 	r := s.router
 
 	r.HandleFunc("/health", s.handleHealthCheck()).Methods("GET")
 	r.HandleFunc("/todos/{id:[0-9]+}", s.handleGetTodo()).Methods("GET")
+	r.HandleFunc("/todos/{id:[0-9]+}", s.handleDeleteTodo()).Methods("DELETE")
 	r.HandleFunc("/todos", s.handleGetTodos()).Methods("GET")
 	r.HandleFunc("/todos", s.handleCreateTodo()).Methods("POST")
 }

@@ -1,5 +1,7 @@
 package todoserver
 
+import "errors"
+
 // MemoryDB is an in memory Database for the TodoServer
 type MemoryDB struct {
 	todos  []TodoEntry
@@ -40,4 +42,16 @@ func (db *MemoryDB) InsertTodo(todo TodoEntry) (*TodoEntry, error) {
 	todo.ID = db.nextID()
 	db.todos = append(db.todos, todo)
 	return &todo, nil
+}
+
+// DeleteTodo ...
+func (db *MemoryDB) DeleteTodo(id int) error {
+	for i, v := range db.todos {
+		if v.ID == id {
+			// Remove from slice
+			db.todos = append(db.todos[:i], db.todos[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("Not found")
 }
