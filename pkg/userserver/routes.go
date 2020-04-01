@@ -8,11 +8,10 @@ import (
 
 func (us *UserServer) handleHealthCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		res := api.NewResponse(w)
-		res.Body = map[string]interface{}{
+		body := map[string]interface{}{
 			"healthy": true,
 		}
-		res.Send()
+		api.SendResponse(w, http.StatusOK, body, "Everything is O.K.")
 	}
 }
 

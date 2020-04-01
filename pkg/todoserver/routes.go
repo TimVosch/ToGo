@@ -13,17 +13,15 @@ import (
 func (s *TodoServer) handleHealthCheck() http.HandlerFunc {
 	// Create response
 	return func(w http.ResponseWriter, r *http.Request) {
-		res := api.NewResponse(w)
-		res.Body = map[string]interface{}{"healthy": true}
-		res.Send()
+		body := map[string]interface{}{"healthy": true}
+		api.SendResponse(w, http.StatusOK, body, "Everything is O.K.")
 	}
 }
 
 func (s *TodoServer) handleGetTodos() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		res := api.NewResponse(w)
-		res.Body = s.db.GetTodosForUser(0)
-		res.Send()
+		todos := s.db.GetTodosForUser(0)
+		api.SendResponse(w, http.StatusOK, todos, "Returned all Todos for given user")
 	}
 }
 
@@ -31,9 +29,10 @@ func (s *TodoServer) handleGetTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
-		res := api.NewResponse(w)
-		res.Body = s.db.GetTodoByID(int(id))
-		res.Send()
+
+		todo := s.db.GetTodoByID(int(id))
+
+		api.SendResponse(w, http.StatusOK, todo, "Returned Todo with given id")
 	}
 }
 
@@ -42,38 +41,32 @@ func (s *TodoServer) handleCreateTodo() http.HandlerFunc {
 		var todo TodoEntry
 		json.NewDecoder(r.Body).Decode(&todo)
 
-		res := api.NewResponse(w)
-
 		// Insert
 		created, err := s.db.InsertTodo(todo)
 		if err != nil {
-			res.Status = http.StatusInternalServerError
-			res.Send()
+			api.SendResponse(w, http.StatusInternalServerError, nil, "An error occured while creating Todo")
 			return
 		}
 
-		res.Body = created
-		res.Send()
+		api.SendResponse(w, http.StatusOK, created, "Created a new Todo")
 	}
 }
 
 func (s *TodoServer) handleDeleteTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		res := api.NewResponse(w)
 		params := mux.Vars(r)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
-		err := s.db.DeleteTodo(int(id))
 
+		err := s.db.DeleteTodo(int(id))
 		if err != nil {
-			res.Send()
-			res.Status = http.StatusNotFound
+			api.SendResponse(w, http.StatusNotFound, nil, "An error occured while deleting Todo")
 			return
 		}
 
-		res.Body = map[string]string{
+		body := map[string]string{
 			"message": "Todo has been removed",
 		}
-		res.Send()
+		api.SendResponse(w, http.StatusOK, body, "Deleted Todo with given ID")
 	}
 }
 
