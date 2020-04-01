@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/timvosch/togo/pkg/todoserver"
 )
@@ -26,22 +25,9 @@ func main() {
 	}()
 	log.Println("Server is ready to handle requests")
 
-	// Loop while system signal is not a shutdown signal
-	for sig := <-sigChan; !isShutdownSignal(sig); {
-	}
+	<-sigChan
 
 	// Shutdown the server
 	log.Println("Shutting down...")
 	s.Shutdown()
-}
-
-// isShutdownSignal checks whether the received system signal
-// should cause a graceful shutdown
-func isShutdownSignal(sig os.Signal) bool {
-	switch {
-	case sig == os.Interrupt:
-	case sig == syscall.SIGUSR2:
-		return true
-	}
-	return false
 }
