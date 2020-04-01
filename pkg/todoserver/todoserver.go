@@ -17,15 +17,20 @@ type Server struct {
 
 // NewServer creates a new server
 func NewServer() *Server {
-	s := &Server{
-		nil,
-		mux.NewRouter(),
+	// Set up
+	router := mux.NewRouter()
+	httpServer := &http.Server{
+		Addr:    ":3000",
+		Handler: router,
 	}
 
-	s.httpServer = &http.Server{
-		Addr:    ":4000",
-		Handler: s.router,
+	// Build Server struct
+	s := &Server{
+		httpServer,
+		router,
 	}
+
+	setRoutes(s)
 
 	return s
 }
