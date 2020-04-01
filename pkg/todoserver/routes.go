@@ -20,9 +20,22 @@ func (s *Server) handleGetTodos() http.HandlerFunc {
 	}
 }
 
+func (s *Server) handleCreateTodo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var todo TodoEntry
+		json.NewDecoder(r.Body).Decode(&todo)
+
+		// Insert
+		if err := s.db.InsertTodo(todo); err != nil {
+			// Error!
+		}
+	}
+}
+
 func setRoutes(s *Server) {
 	r := s.router
 
 	r.HandleFunc("/health", s.handleHealthCheck()).Methods("GET")
-	r.HandleFunc("/todos/{id:[0-9]+}", s.handleGetTodos()).Methods("GET")
+	r.HandleFunc("/todos", s.handleGetTodos()).Methods("GET")
+	r.HandleFunc("/todos", s.handleCreateTodo()).Methods("POST")
 }
