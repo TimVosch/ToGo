@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (s *Server) handleHealthCheck() http.HandlerFunc {
+func (s *TodoServer) handleHealthCheck() http.HandlerFunc {
 	// Create response
 	return func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]bool{"healthy": true}
@@ -16,14 +16,14 @@ func (s *Server) handleHealthCheck() http.HandlerFunc {
 	}
 }
 
-func (s *Server) handleGetTodos() http.HandlerFunc {
+func (s *TodoServer) handleGetTodos() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		todos := s.db.GetTodosForUser(0)
 		json.NewEncoder(w).Encode(todos)
 	}
 }
 
-func (s *Server) handleGetTodo() http.HandlerFunc {
+func (s *TodoServer) handleGetTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
@@ -32,7 +32,7 @@ func (s *Server) handleGetTodo() http.HandlerFunc {
 	}
 }
 
-func (s *Server) handleCreateTodo() http.HandlerFunc {
+func (s *TodoServer) handleCreateTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var todo TodoEntry
 		json.NewDecoder(r.Body).Decode(&todo)
@@ -48,7 +48,7 @@ func (s *Server) handleCreateTodo() http.HandlerFunc {
 	}
 }
 
-func (s *Server) handleDeleteTodo() http.HandlerFunc {
+func (s *TodoServer) handleDeleteTodo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
@@ -61,7 +61,7 @@ func (s *Server) handleDeleteTodo() http.HandlerFunc {
 	}
 }
 
-func setRoutes(s *Server) {
+func setRoutes(s *TodoServer) {
 	r := s.router
 
 	r.HandleFunc("/health", s.handleHealthCheck()).Methods("GET")

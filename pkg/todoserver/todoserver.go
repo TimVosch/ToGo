@@ -9,15 +9,15 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Server contains relevant todo Server objects
-type Server struct {
+// TodoServer contains relevant todo Server objects
+type TodoServer struct {
 	httpServer *http.Server
 	router     *mux.Router
 	db         TodoDAL
 }
 
 // NewServer creates a new server
-func NewServer() *Server {
+func NewServer() *TodoServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
@@ -26,8 +26,8 @@ func NewServer() *Server {
 	}
 	db := NewMemoryDB()
 
-	// Build Server struct
-	s := &Server{
+	// Build TodoServer struct
+	s := &TodoServer{
 		httpServer,
 		router,
 		db,
@@ -39,12 +39,12 @@ func NewServer() *Server {
 }
 
 // StartServer creates and starts a TodoServer
-func (s *Server) StartServer() error {
+func (s *TodoServer) StartServer() error {
 	return s.httpServer.ListenAndServe()
 }
 
 // Shutdown the server
-func (s *Server) Shutdown() {
+func (s *TodoServer) Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
