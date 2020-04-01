@@ -8,7 +8,7 @@ import (
 // Response is an API Response
 type Response struct {
 	Status         int
-	Body           map[string]interface{}
+	Body           interface{}
 	responseWriter http.ResponseWriter
 	useWrapper     bool
 }
@@ -31,7 +31,7 @@ func (r *Response) Send() {
 // writeBody send the JSON response
 func (r *Response) writeBody() {
 	w := r.responseWriter
-	var body map[string]interface{}
+	var body interface{}
 
 	if r.useWrapper == true {
 		body = map[string]interface{}{
