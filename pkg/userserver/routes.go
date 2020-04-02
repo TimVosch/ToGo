@@ -1,6 +1,7 @@
 package userserver
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/timvosch/togo/pkg/api"
@@ -17,7 +18,18 @@ func (us *UserServer) handleHealthCheck() http.HandlerFunc {
 
 func (us *UserServer) handleRegisterUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		api.SendResponse(w, http.StatusOK, nil, "User registered")
+		var user User
+		json.NewDecoder(r.Body).Decode(&user)
+
+		// Hash password
+		user.SetPassword(user.Password)
+
+		created, err := us.repo.InsertUser(user)
+		if err != nil {
+			api.SendResponse(w, http.StatusInternalServerError, err, "An error occured while registering user")
+		}
+
+		api.SendResponse(w, http.StatusOK, created, "User registered")
 	}
 }
 

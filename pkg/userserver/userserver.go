@@ -13,6 +13,7 @@ import (
 type UserServer struct {
 	httpServer *http.Server
 	router     *mux.Router
+	repo       UserRepository
 }
 
 // NewServer creates a new server
@@ -23,11 +24,13 @@ func NewServer() *UserServer {
 		Addr:    ":3000",
 		Handler: router,
 	}
+	repo := NewUserMemoryRepository()
 
 	// Build UserServer struct
 	s := &UserServer{
 		httpServer,
 		router,
+		repo,
 	}
 
 	setRoutes(s)

@@ -22,7 +22,7 @@ func NewUserMemoryRepository() *UserMemoryRepository {
 // GetUserByEmail ...
 func (repo *UserMemoryRepository) GetUserByEmail(email string) *User {
 	for _, v := range repo.store {
-		if v.email == email {
+		if v.Email == email {
 			return &v
 		}
 	}
