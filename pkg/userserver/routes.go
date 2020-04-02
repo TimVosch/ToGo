@@ -51,10 +51,26 @@ func (us *UserServer) handleGetUserByID() http.HandlerFunc {
 	}
 }
 
+func auth(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authenticated := false
+
+		if authenticated == true {
+			h(w, r)
+		} else {
+			api.SendResponse(w, http.StatusUnauthorized, nil, "You need to be authenticated")
+		}
+
+	}
+}
+
 func setRoutes(us *UserServer) {
 	r := us.router
 
-	r.HandleFunc("/health", us.handleHealthCheck()).Methods("GET")
+	r.HandleFunc(
+		"/health",
+		auth(us.handleHealthCheck()),
+	).Methods("GET")
 	r.HandleFunc("/users", us.handleRegisterUser()).Methods("POST")
 	r.HandleFunc("/users/{id:[0-9]+}", us.handleGetUserByID()).Methods("GET")
 }
