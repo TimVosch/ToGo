@@ -15,8 +15,15 @@ func (us *UserServer) handleHealthCheck() http.HandlerFunc {
 	}
 }
 
+func (us *UserServer) handleRegisterUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		api.SendResponse(w, http.StatusOK, nil, "User registered")
+	}
+}
+
 func setRoutes(us *UserServer) {
 	r := us.router
 
 	r.HandleFunc("/health", us.handleHealthCheck()).Methods("GET")
+	r.HandleFunc("/users", us.handleRegisterUser()).Methods("POST")
 }
