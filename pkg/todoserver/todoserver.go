@@ -13,7 +13,7 @@ import (
 type TodoServer struct {
 	httpServer *http.Server
 	router     *mux.Router
-	db         TodoDAL
+	db         TodoRepository
 }
 
 // NewServer creates a new server
@@ -24,7 +24,7 @@ func NewServer() *TodoServer {
 		Addr:    ":3000",
 		Handler: router,
 	}
-	db := NewMemoryDB()
+	db := NewTodoMemoryRepository()
 
 	// Build TodoServer struct
 	s := &TodoServer{
