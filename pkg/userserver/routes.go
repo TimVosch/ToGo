@@ -3,6 +3,9 @@ package userserver
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 
 	"github.com/timvosch/togo/pkg/api"
 )
@@ -29,7 +32,22 @@ func (us *UserServer) handleRegisterUser() http.HandlerFunc {
 			api.SendResponse(w, http.StatusInternalServerError, err, "An error occured while registering user")
 		}
 
-		api.SendResponse(w, http.StatusOK, created, "User registered")
+		api.SendResponse(w, http.StatusCreated, created, "User registered")
+	}
+}
+
+func (us *UserServer) handleGetUserByID() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := mux.Vars(r)
+		id, _ := strconv.ParseInt(params["id"], 10, 0)
+
+		user := us.repo.GetUserByID(int(id))
+		if user == nil {
+			api.SendResponse(w, http.StatusNotFound, nil, "User not found")
+			return
+		}
+
+		api.SendResponse(w, http.StatusOK, user, "Fetched user by ID")
 	}
 }
 
@@ -38,4 +56,5 @@ func setRoutes(us *UserServer) {
 
 	r.HandleFunc("/health", us.handleHealthCheck()).Methods("GET")
 	r.HandleFunc("/users", us.handleRegisterUser()).Methods("POST")
+	r.HandleFunc("/users/{id:[0-9]+}", us.handleGetUserByID()).Methods("GET")
 }
