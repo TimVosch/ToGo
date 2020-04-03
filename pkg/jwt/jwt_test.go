@@ -6,10 +6,12 @@ import (
 	_ "crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"log"
 	"testing"
+	"time"
 )
 
-func TestSign(t *testing.T) {
+func createJWT() *JWT {
 	// Gen keys
 	privKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pubKey := &privKey.PublicKey
@@ -17,8 +19,7 @@ func TestSign(t *testing.T) {
 		Type:  "RSA PUBLIC KEY",
 		Bytes: x509.MarshalPKCS1PublicKey(pubKey),
 	})
-	// pemKeyB64 := base64.StdEncoding.EncodeToString(pemKey)
-	t.Log("Got pubkey:\n", string(pemKey))
+	log.Println("Got pubkey:\n", string(pemKey))
 
 	jwt := &JWT{
 		algorithm: "RS256",
@@ -26,12 +27,68 @@ func TestSign(t *testing.T) {
 		verifyKey: pubKey,
 	}
 
+	return jwt
+}
+
+func TestSignDoesVerify(t *testing.T) {
+	jwt := createJWT()
 	token := jwt.CreateToken()
 	token.body = map[string]interface{}{
 		"wow": "hello",
 	}
 
 	jwtStr := jwt.Sign(token)
-	t.Log("Got jwt: ", jwtStr)
+	t.Log("Got jwt:\n", jwtStr)
 
+	_, err := jwt.Verify(jwtStr)
+
+	if err != nil {
+		t.Fatal("Failed to verify our own signed token")
+	}
+}
+
+func TestErrorInvalidSignature(t *testing.T) {
+	jwt1 := createJWT()
+	jwt2 := createJWT()
+	token := jwt1.CreateToken()
+	token.body = map[string]interface{}{
+		"wow": "hello",
+	}
+
+	jwtStr := jwt1.Sign(token)
+	t.Log("Got jwt:\n", jwtStr)
+
+	_, err := jwt2.Verify(jwtStr)
+
+	if err == nil {
+		t.Fatal("Incorrect signature did not throw")
+	}
+}
+
+func TestErrorIncorrectJwtFormat(t *testing.T) {
+	jwt := createJWT()
+	jwtStr := "incorrectJWT"
+
+	_, err := jwt.Verify(jwtStr)
+
+	if err == nil {
+		t.Fatal("Incorrect JWT format did not throw")
+	}
+}
+
+func TestExpiredToken(t *testing.T) {
+	jwt := createJWT()
+	token := jwt.CreateToken()
+	token.body = map[string]interface{}{
+		"exp": time.Now().Unix() - 10,
+	}
+
+	jwtStr := jwt.Sign(token)
+	log.Println("Got jwt:\n", jwtStr)
+
+	_, err := jwt.Verify(jwtStr)
+
+	if err == nil {
+		t.Fatal("Expired JWT was verified")
+	}
 }
