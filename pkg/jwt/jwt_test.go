@@ -1,4 +1,4 @@
-package jwt
+package jwt_test
 
 import (
 	"crypto/rand"
@@ -9,9 +9,11 @@ import (
 	"log"
 	"testing"
 	"time"
+
+	"github.com/timvosch/togo/pkg/jwt"
 )
 
-func createJWT() *JWT {
+func createJWT() jwt.JWT {
 	// Gen keys
 	privKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pubKey := &privKey.PublicKey
@@ -21,7 +23,7 @@ func createJWT() *JWT {
 	})
 	log.Println("Got pubkey:\n", string(pemKey))
 
-	jwt := &JWT{
+	jwt := jwt.JWT{
 		Algorithm:  "RS256",
 		PrivateKey: privKey,
 		PublicKey:  pubKey,
