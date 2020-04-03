@@ -3,10 +3,7 @@ package userserver
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
-
-	"github.com/gorilla/mux"
 
 	"github.com/timvosch/togo/pkg/api"
 	"github.com/timvosch/togo/pkg/jwt"
@@ -38,12 +35,18 @@ func (us *UserServer) handleRegisterUser() api.HandlerFunc {
 	}
 }
 
-func (us *UserServer) handleGetUserByID() api.HandlerFunc {
+func (us *UserServer) handleGetUserSelf() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
-		params := mux.Vars(ctx.R)
-		id, _ := strconv.ParseInt(params["id"], 10, 0)
+		// Get uid from authenticated user
+		idf, ok := ctx.User["sub"].(float64)
+		id := int(idf)
 
-		user := us.repo.GetUserByID(int(id))
+		if ok == false {
+			api.SendResponse(ctx.W, http.StatusForbidden, ctx.User, "Not authenticated as user")
+			return
+		}
+
+		user := us.repo.GetUserByID(id)
 		if user == nil {
 			api.SendResponse(ctx.W, http.StatusNotFound, nil, "User not found")
 			return
@@ -96,12 +99,13 @@ func makeAuthMiddleware(jwt *jwt.JWT) func() api.HandlerFunc {
 				return
 			}
 
-			_, err := jwt.Verify(parts[1])
+			token, err := jwt.Verify(parts[1])
 			if err != nil {
 				api.SendResponse(w, http.StatusUnauthorized, nil, "Provided JWT is invalid")
 				return
 			}
 
+			ctx.User = token.Body
 			next()
 		}
 	}
@@ -134,10 +138,10 @@ func setRoutes(us *UserServer) {
 
 	//
 	r.HandleFunc(
-		"/users/{id:[0-9]+}",
+		"/users/self",
 		api.Handler(
 			auth(),
-			us.handleGetUserByID(),
+			us.handleGetUserSelf(),
 		),
 	).Methods("GET")
 }
