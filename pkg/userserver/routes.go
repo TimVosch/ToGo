@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 
 	"github.com/timvosch/togo/pkg/api"
+	"github.com/timvosch/togo/pkg/jwt"
 )
 
 func (us *UserServer) handleHealthCheck() http.HandlerFunc {
@@ -51,26 +53,53 @@ func (us *UserServer) handleGetUserByID() http.HandlerFunc {
 	}
 }
 
-func auth(h http.HandlerFunc) http.HandlerFunc {
+func (us *UserServer) handleLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authenticated := false
-
-		if authenticated == true {
-			h(w, r)
-		} else {
-			api.SendResponse(w, http.StatusUnauthorized, nil, "You need to be authenticated")
+		token := us.jwt.CreateToken()
+		body := map[string]string{
+			"token": us.jwt.Sign(token),
 		}
+		api.SendResponse(w, http.StatusOK, body, "Succesfully logged in")
+	}
+}
 
+func makeAuthMiddleware(jwt *jwt.JWT) func(http.HandlerFunc) http.HandlerFunc {
+	// Middleware
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		// Handler
+		return func(w http.ResponseWriter, r *http.Request) {
+			header := r.Header.Get("Authorization")
+			parts := strings.Split(header, " ")
+			if len(parts) != 2 {
+				api.SendResponse(w, http.StatusUnauthorized, nil, "Must be authenticated")
+				return
+			}
+			if parts[0] != "Bearer" {
+				api.SendResponse(w, http.StatusUnauthorized, nil, "Authorization method not supported")
+				return
+			}
+
+			_, err := jwt.Verify(parts[1])
+			if err != nil {
+				api.SendResponse(w, http.StatusUnauthorized, nil, "Provided JWT is invalid")
+				return
+			}
+
+			// Continue
+			h(w, r)
+		}
 	}
 }
 
 func setRoutes(us *UserServer) {
 	r := us.router
+	auth := makeAuthMiddleware(us.jwt)
 
 	r.HandleFunc(
 		"/health",
 		auth(us.handleHealthCheck()),
 	).Methods("GET")
+	r.HandleFunc("/auth", us.handleLogin()).Methods("POST")
 	r.HandleFunc("/users", us.handleRegisterUser()).Methods("POST")
-	r.HandleFunc("/users/{id:[0-9]+}", us.handleGetUserByID()).Methods("GET")
+	r.HandleFunc("/users/{id:[0-9]+}", auth(us.handleGetUserByID())).Methods("GET")
 }
