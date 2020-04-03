@@ -54,10 +54,26 @@ func (us *UserServer) handleGetUserByID() api.HandlerFunc {
 }
 
 func (us *UserServer) handleLogin() api.HandlerFunc {
+	// Request DTO
+	type Request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
 	return func(ctx *api.CTX, next func()) {
-		token := us.jwt.CreateToken()
+		var req Request
+		if err := json.NewDecoder(ctx.R.Body).Decode(&req); err != nil {
+			api.SendResponse(ctx.W, http.StatusBadRequest, nil, "Bad request")
+			return
+		}
+
+		token, err := us.loginUser(req.Email, req.Password)
+		if err != nil {
+			api.SendResponse(ctx.W, http.StatusForbidden, nil, "Incorrect login information")
+			return
+		}
+
 		body := map[string]string{
-			"token": us.jwt.Sign(token),
+			"token": token,
 		}
 		api.SendResponse(ctx.W, http.StatusOK, body, "Succesfully logged in")
 	}

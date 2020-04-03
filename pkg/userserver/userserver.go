@@ -2,12 +2,14 @@ package userserver
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/timvosch/togo/pkg/jwt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserServer ...
@@ -59,5 +61,27 @@ func (us *UserServer) Shutdown() {
 	if err := us.httpServer.Shutdown(ctx); err != nil {
 		log.Fatalf("Could not gracefully shutdown the server: %v\n", err)
 	}
+}
 
+func (us *UserServer) loginUser(email, password string) (string, error) {
+	user := us.repo.GetUserByEmail(email)
+	if user == nil {
+		return "", errors.New("")
+	}
+
+	// Match password against hash
+	err := bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(password),
+	)
+	if err != nil {
+		return "", errors.New("")
+	}
+
+	// Create token with subject as user ID
+	token := us.jwt.CreateToken()
+	token.Body = map[string]interface{}{
+		"sub": user.ID,
+	}
+	return us.jwt.Sign(token), nil
 }
