@@ -13,7 +13,7 @@ import (
 )
 
 func (us *UserServer) handleHealthCheck() api.HandlerFunc {
-	return func(ctx *api.CTX) {
+	return func(ctx *api.CTX, next func()) {
 		body := map[string]interface{}{
 			"healthy": true,
 		}
@@ -22,7 +22,7 @@ func (us *UserServer) handleHealthCheck() api.HandlerFunc {
 }
 
 func (us *UserServer) handleRegisterUser() api.HandlerFunc {
-	return func(ctx *api.CTX) {
+	return func(ctx *api.CTX, next func()) {
 		var user User
 		json.NewDecoder(ctx.R.Body).Decode(&user)
 
@@ -39,7 +39,7 @@ func (us *UserServer) handleRegisterUser() api.HandlerFunc {
 }
 
 func (us *UserServer) handleGetUserByID() api.HandlerFunc {
-	return func(ctx *api.CTX) {
+	return func(ctx *api.CTX, next func()) {
 		params := mux.Vars(ctx.R)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
 
@@ -54,7 +54,7 @@ func (us *UserServer) handleGetUserByID() api.HandlerFunc {
 }
 
 func (us *UserServer) handleLogin() api.HandlerFunc {
-	return func(ctx *api.CTX) {
+	return func(ctx *api.CTX, next func()) {
 		token := us.jwt.CreateToken()
 		body := map[string]string{
 			"token": us.jwt.Sign(token),
@@ -63,11 +63,10 @@ func (us *UserServer) handleLogin() api.HandlerFunc {
 	}
 }
 
-func makeAuthMiddleware(jwt *jwt.JWT) func(api.HandlerFunc) api.HandlerFunc {
-	// Middleware
-	return func(next api.HandlerFunc) api.HandlerFunc {
-		// Handler
-		return func(ctx *api.CTX) {
+func makeAuthMiddleware(jwt *jwt.JWT) func() api.HandlerFunc {
+	// Handler
+	return func() api.HandlerFunc {
+		return func(ctx *api.CTX, next func()) {
 			r := ctx.R
 			w := ctx.W
 			header := r.Header.Get("Authorization")
@@ -87,8 +86,7 @@ func makeAuthMiddleware(jwt *jwt.JWT) func(api.HandlerFunc) api.HandlerFunc {
 				return
 			}
 
-			// Continue
-			next(ctx)
+			next()
 		}
 	}
 }
@@ -97,20 +95,33 @@ func setRoutes(us *UserServer) {
 	r := us.router
 	auth := makeAuthMiddleware(us.jwt)
 
+	//
 	r.HandleFunc(
 		"/health",
-		api.Handler(auth(us.handleHealthCheck())),
+		api.Handler(
+			auth(),
+			us.handleHealthCheck(),
+		),
 	).Methods("GET")
+
+	//
 	r.HandleFunc(
 		"/auth",
 		api.Handler(us.handleLogin()),
 	).Methods("POST")
+
+	//
 	r.HandleFunc(
 		"/users",
 		api.Handler(us.handleRegisterUser()),
 	).Methods("POST")
+
+	//
 	r.HandleFunc(
 		"/users/{id:[0-9]+}",
-		api.Handler(auth(us.handleGetUserByID())),
+		api.Handler(
+			auth(),
+			us.handleGetUserByID(),
+		),
 	).Methods("GET")
 }
