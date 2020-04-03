@@ -8,7 +8,7 @@ import (
 type CTX struct {
 	W    http.ResponseWriter
 	R    *http.Request
-	User interface{}
+	User map[string]interface{}
 }
 
 // HandlerFunc represents and API request handler
