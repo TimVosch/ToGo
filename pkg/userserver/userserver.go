@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/timvosch/togo/pkg/jwt"
 )
 
 // UserServer ...
@@ -14,10 +15,11 @@ type UserServer struct {
 	httpServer *http.Server
 	router     *mux.Router
 	repo       UserRepository
+	jwt        *jwt.JWT
 }
 
 // NewServer creates a new server
-func NewServer() *UserServer {
+func NewServer(privKeyPath string) *UserServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
@@ -25,12 +27,18 @@ func NewServer() *UserServer {
 		Handler: router,
 	}
 	repo := NewUserMemoryRepository()
+	j := jwt.NewJWT(privKeyPath)
+
+	if j == nil {
+		log.Fatalln("Could not create JWT")
+	}
 
 	// Build UserServer struct
 	s := &UserServer{
 		httpServer,
 		router,
 		repo,
+		j,
 	}
 
 	setRoutes(s)

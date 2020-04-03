@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -9,13 +10,21 @@ import (
 	"github.com/timvosch/togo/pkg/userserver"
 )
 
+var (
+	privKeyPath = flag.String("privkey", "./private.pem", "Path to the private RSA key")
+)
+
+func init() {
+	flag.Parse()
+}
+
 func main() {
 	// Capture system signals
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan)
 
 	// Create server
-	us := userserver.NewServer()
+	us := userserver.NewServer(*privKeyPath)
 
 	// Start the server in a new goroutine
 	go func() {

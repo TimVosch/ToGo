@@ -22,9 +22,9 @@ func createJWT() *JWT {
 	log.Println("Got pubkey:\n", string(pemKey))
 
 	jwt := &JWT{
-		algorithm: "RS256",
-		signKey:   privKey,
-		verifyKey: pubKey,
+		Algorithm:  "RS256",
+		PrivateKey: privKey,
+		PublicKey:  pubKey,
 	}
 
 	return jwt
@@ -33,7 +33,7 @@ func createJWT() *JWT {
 func TestSignDoesVerify(t *testing.T) {
 	jwt := createJWT()
 	token := jwt.CreateToken()
-	token.body = map[string]interface{}{
+	token.Body = map[string]interface{}{
 		"wow": "hello",
 	}
 
@@ -51,7 +51,7 @@ func TestErrorInvalidSignature(t *testing.T) {
 	jwt1 := createJWT()
 	jwt2 := createJWT()
 	token := jwt1.CreateToken()
-	token.body = map[string]interface{}{
+	token.Body = map[string]interface{}{
 		"wow": "hello",
 	}
 
@@ -79,7 +79,7 @@ func TestErrorIncorrectJwtFormat(t *testing.T) {
 func TestExpiredToken(t *testing.T) {
 	jwt := createJWT()
 	token := jwt.CreateToken()
-	token.body = map[string]interface{}{
+	token.Body = map[string]interface{}{
 		"exp": time.Now().Unix() - 10,
 	}
 

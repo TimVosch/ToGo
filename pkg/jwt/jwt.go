@@ -4,9 +4,13 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
+	"io/ioutil"
+	"log"
 	"strings"
 	"time"
 
@@ -16,16 +20,40 @@ import (
 
 // JWT holds configuration for signing and verifying
 type JWT struct {
-	algorithm string
-	signKey   *rsa.PrivateKey
-	verifyKey *rsa.PublicKey
+	Algorithm  string
+	PrivateKey *rsa.PrivateKey
+	PublicKey  *rsa.PublicKey
 }
 
 // Token represents a JWT
 type Token struct {
 	header    map[string]string
-	body      map[string]interface{}
+	Body      map[string]interface{}
 	signature []uint8
+}
+
+// NewJWT ...
+func NewJWT(privKeyPath string) *JWT {
+	var dat []byte
+	dat, err := ioutil.ReadFile(privKeyPath)
+	if err != nil {
+		return nil
+	}
+
+	b, _ := pem.Decode(dat)
+
+	privKey, err := x509.ParsePKCS1PrivateKey(b.Bytes)
+	if err != nil {
+		return nil
+	}
+
+	log.Println("Loaded private key")
+
+	return &JWT{
+		Algorithm:  "RS256",
+		PrivateKey: privKey,
+		PublicKey:  &privKey.PublicKey,
+	}
 }
 
 // CreateToken prepares a new Token
@@ -33,9 +61,9 @@ func (jwt *JWT) CreateToken() *Token {
 	return &Token{
 		header: map[string]string{
 			"typ": "jwt",
-			"alg": jwt.algorithm,
+			"alg": jwt.Algorithm,
 		},
-		body:      map[string]interface{}{},
+		Body:      map[string]interface{}{},
 		signature: []byte{},
 	}
 }
@@ -54,7 +82,7 @@ func (jwt *JWT) Decode(jwtStr string) (*Token, error) {
 	sig, _ := base64.RawURLEncoding.DecodeString(strs[2])
 
 	json.Unmarshal(headerRaw, &token.header)
-	json.Unmarshal(bodyRaw, &token.body)
+	json.Unmarshal(bodyRaw, &token.Body)
 	token.signature = sig
 
 	return &token, nil
@@ -77,14 +105,14 @@ func (jwt *JWT) Verify(jwtStr string) (*Token, error) {
 	sha256 := crypto.SHA256.New()
 	sha256.Write([]byte(hashInput))
 	hashed := sha256.Sum(nil)
-	err = rsa.VerifyPKCS1v15(jwt.verifyKey, crypto.SHA256, hashed, token.signature)
+	err = rsa.VerifyPKCS1v15(jwt.PublicKey, crypto.SHA256, hashed, token.signature)
 
 	if err != nil {
 		return nil, errors.New("Invalid JWT signature")
 	}
 
 	// Verify exp
-	if exp, ok := token.body["exp"].(float64); ok == true {
+	if exp, ok := token.Body["exp"].(float64); ok == true {
 		if time.Now().Unix() >= int64(exp) {
 			return nil, errors.New("JWT has expired")
 		}
@@ -101,14 +129,14 @@ func (jwt *JWT) Sign(t *Token) string {
 	headerB64 := base64.RawURLEncoding.EncodeToString(r)
 
 	// Encode body
-	r, _ = json.Marshal(t.body)
+	r, _ = json.Marshal(t.Body)
 	bodyB64 := base64.RawURLEncoding.EncodeToString(r)
 
 	// Create signature
 	sha256 := crypto.SHA256.New()
 	sha256.Write([]byte(headerB64 + "." + bodyB64))
 	hashed := sha256.Sum(nil)
-	sig, _ := rsa.SignPKCS1v15(rand.Reader, jwt.signKey, crypto.SHA256, hashed)
+	sig, _ := rsa.SignPKCS1v15(rand.Reader, jwt.PrivateKey, crypto.SHA256, hashed)
 	sigB64 := base64.RawURLEncoding.EncodeToString(sig)
 
 	return headerB64 + "." + bodyB64 + "." + sigB64
