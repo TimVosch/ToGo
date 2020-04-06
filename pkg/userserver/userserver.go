@@ -21,11 +21,11 @@ type UserServer struct {
 }
 
 // NewServer creates a new server
-func NewServer(privKeyPath string) *UserServer {
+func NewServer(addr, privKeyPath string) *UserServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
-		Addr:    ":3000",
+		Addr:    addr,
 		Handler: router,
 	}
 	repo := NewUserMemoryRepository()

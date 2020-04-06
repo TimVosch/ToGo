@@ -19,11 +19,11 @@ type TodoServer struct {
 }
 
 // NewServer creates a new server
-func NewServer() *TodoServer {
+func NewServer(addr string) *TodoServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
-		Addr:    ":3000",
+		Addr:    addr,
 		Handler: router,
 	}
 	db := NewTodoMemoryRepository()

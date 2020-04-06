@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	addr        = flag.String("addr", ":3000", "Set the listening address")
 	privKeyPath = flag.String("privkey", "./private.pem", "Path to the private RSA key")
 )
 
@@ -24,7 +25,7 @@ func main() {
 	signal.Notify(sigChan)
 
 	// Create server
-	us := userserver.NewServer(*privKeyPath)
+	us := userserver.NewServer(*addr, *privKeyPath)
 
 	// Start the server in a new goroutine
 	go func() {
