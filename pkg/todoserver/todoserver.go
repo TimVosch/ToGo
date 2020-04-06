@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/timvosch/togo/pkg/jwt"
 )
 
 // TodoServer contains relevant todo Server objects
@@ -14,6 +15,7 @@ type TodoServer struct {
 	httpServer *http.Server
 	router     *mux.Router
 	db         TodoRepository
+	jwt        *jwt.JWT
 }
 
 // NewServer creates a new server
@@ -25,12 +27,14 @@ func NewServer() *TodoServer {
 		Handler: router,
 	}
 	db := NewTodoMemoryRepository()
+	jwt := jwt.NewJWT("./private.pem")
 
 	// Build TodoServer struct
 	s := &TodoServer{
 		httpServer,
 		router,
 		db,
+		jwt,
 	}
 
 	setRoutes(s)
