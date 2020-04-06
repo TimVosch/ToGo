@@ -42,6 +42,14 @@ func (ts *TodoServer) handleCreateTodo() api.HandlerFunc {
 		var todo TodoEntry
 		json.NewDecoder(ctx.R.Body).Decode(&todo)
 
+		// Set owner
+		id, ok := ctx.User["sub"].(float64)
+		if !ok {
+			ctx.SendResponse(http.StatusUnauthorized, nil, "Authenticated is not a user")
+			return
+		}
+		todo.OwnerID = int(id)
+
 		// Insert
 		created, err := ts.db.InsertTodo(todo)
 		if err != nil {
@@ -71,6 +79,7 @@ func (ts *TodoServer) handleDeleteTodo() api.HandlerFunc {
 	}
 }
 
+// TODO: Would be nice if there was a way to avoid type assertion everytime user id was required.
 func (ts *TodoServer) auth() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
 		header := ctx.R.Header.Get("Authorization")
