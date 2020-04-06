@@ -15,8 +15,8 @@ type Response struct {
 }
 
 // SendResponse creates and immediately sends a response
-func SendResponse(w http.ResponseWriter, status int, body interface{}, message string) {
-	r := NewResponse(w)
+func (ctx *CTX) SendResponse(status int, body interface{}, message string) {
+	r := NewResponse(ctx.W)
 	r.Status = status
 	r.Body = body
 	r.Message = message

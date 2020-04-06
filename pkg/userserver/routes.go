@@ -14,7 +14,7 @@ func (us *UserServer) handleHealthCheck() api.HandlerFunc {
 		body := map[string]interface{}{
 			"healthy": true,
 		}
-		api.SendResponse(ctx.W, http.StatusOK, body, "Everything is O.K.")
+		ctx.SendResponse(http.StatusOK, body, "Everything is O.K.")
 	}
 }
 
@@ -28,10 +28,10 @@ func (us *UserServer) handleRegisterUser() api.HandlerFunc {
 
 		created, err := us.repo.InsertUser(user)
 		if err != nil {
-			api.SendResponse(ctx.W, http.StatusInternalServerError, err, "An error occured while registering user")
+			ctx.SendResponse(http.StatusInternalServerError, err, "An error occured while registering user")
 		}
 
-		api.SendResponse(ctx.W, http.StatusCreated, created, "User registered")
+		ctx.SendResponse(http.StatusCreated, created, "User registered")
 	}
 }
 
@@ -42,17 +42,17 @@ func (us *UserServer) handleGetUserSelf() api.HandlerFunc {
 		id := int(idf)
 
 		if ok == false {
-			api.SendResponse(ctx.W, http.StatusForbidden, ctx.User, "Not authenticated as user")
+			ctx.SendResponse(http.StatusForbidden, ctx.User, "Not authenticated as user")
 			return
 		}
 
 		user := us.repo.GetUserByID(id)
 		if user == nil {
-			api.SendResponse(ctx.W, http.StatusNotFound, nil, "User not found")
+			ctx.SendResponse(http.StatusNotFound, nil, "User not found")
 			return
 		}
 
-		api.SendResponse(ctx.W, http.StatusOK, user, "Fetched user by ID")
+		ctx.SendResponse(http.StatusOK, user, "Fetched user by ID")
 	}
 }
 
@@ -65,20 +65,20 @@ func (us *UserServer) handleLogin() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
 		var req Request
 		if err := json.NewDecoder(ctx.R.Body).Decode(&req); err != nil {
-			api.SendResponse(ctx.W, http.StatusBadRequest, nil, "Bad request")
+			ctx.SendResponse(http.StatusBadRequest, nil, "Bad request")
 			return
 		}
 
 		token, err := us.loginUser(req.Email, req.Password)
 		if err != nil {
-			api.SendResponse(ctx.W, http.StatusForbidden, nil, "Incorrect login information")
+			ctx.SendResponse(http.StatusForbidden, nil, "Incorrect login information")
 			return
 		}
 
 		body := map[string]string{
 			"token": token,
 		}
-		api.SendResponse(ctx.W, http.StatusOK, body, "Succesfully logged in")
+		ctx.SendResponse(http.StatusOK, body, "Succesfully logged in")
 	}
 }
 
@@ -86,22 +86,20 @@ func makeAuthMiddleware(jwt *jwt.JWT) func() api.HandlerFunc {
 	// Handler
 	return func() api.HandlerFunc {
 		return func(ctx *api.CTX, next func()) {
-			r := ctx.R
-			w := ctx.W
-			header := r.Header.Get("Authorization")
+			header := ctx.R.Header.Get("Authorization")
 			parts := strings.Split(header, " ")
 			if len(parts) != 2 {
-				api.SendResponse(w, http.StatusUnauthorized, nil, "Must be authenticated")
+				ctx.SendResponse(http.StatusUnauthorized, nil, "Must be authenticated")
 				return
 			}
 			if parts[0] != "Bearer" {
-				api.SendResponse(w, http.StatusUnauthorized, nil, "Authorization method not supported")
+				ctx.SendResponse(http.StatusUnauthorized, nil, "Authorization method not supported")
 				return
 			}
 
 			token, err := jwt.Verify(parts[1])
 			if err != nil {
-				api.SendResponse(w, http.StatusUnauthorized, nil, "Provided JWT is invalid")
+				ctx.SendResponse(http.StatusUnauthorized, nil, "Provided JWT is invalid")
 				return
 			}
 

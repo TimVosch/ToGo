@@ -14,14 +14,14 @@ func (s *TodoServer) handleHealthCheck() api.HandlerFunc {
 	// Create response
 	return func(ctx *api.CTX, next func()) {
 		body := map[string]interface{}{"healthy": true}
-		api.SendResponse(ctx.W, http.StatusOK, body, "Everything is O.K.")
+		ctx.SendResponse(http.StatusOK, body, "Everything is O.K.")
 	}
 }
 
 func (s *TodoServer) handleGetTodos() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
 		todos := s.db.GetTodosForUser(0)
-		api.SendResponse(ctx.W, http.StatusOK, todos, "Returned all Todos for given user")
+		ctx.SendResponse(http.StatusOK, todos, "Returned all Todos for given user")
 	}
 }
 
@@ -32,7 +32,7 @@ func (s *TodoServer) handleGetTodo() api.HandlerFunc {
 
 		todo := s.db.GetTodoByID(int(id))
 
-		api.SendResponse(ctx.W, http.StatusOK, todo, "Returned Todo with given id")
+		ctx.SendResponse(http.StatusOK, todo, "Returned Todo with given id")
 	}
 }
 
@@ -44,11 +44,11 @@ func (s *TodoServer) handleCreateTodo() api.HandlerFunc {
 		// Insert
 		created, err := s.db.InsertTodo(todo)
 		if err != nil {
-			api.SendResponse(ctx.W, http.StatusInternalServerError, nil, "An error occured while creating Todo")
+			ctx.SendResponse(http.StatusInternalServerError, nil, "An error occured while creating Todo")
 			return
 		}
 
-		api.SendResponse(ctx.W, http.StatusOK, created, "Created a new Todo")
+		ctx.SendResponse(http.StatusOK, created, "Created a new Todo")
 	}
 }
 
@@ -59,14 +59,14 @@ func (s *TodoServer) handleDeleteTodo() api.HandlerFunc {
 
 		err := s.db.DeleteTodo(int(id))
 		if err != nil {
-			api.SendResponse(ctx.W, http.StatusNotFound, nil, "An error occured while deleting Todo")
+			ctx.SendResponse(http.StatusNotFound, nil, "An error occured while deleting Todo")
 			return
 		}
 
 		body := map[string]string{
 			"message": "Todo has been removed",
 		}
-		api.SendResponse(ctx.W, http.StatusOK, body, "Deleted Todo with given ID")
+		ctx.SendResponse(http.StatusOK, body, "Deleted Todo with given ID")
 	}
 }
 
