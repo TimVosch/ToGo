@@ -36,12 +36,6 @@ func (us *UserServer) handleRegisterUser() api.HandlerFunc {
 
 func (us *UserServer) handleGetUserSelf() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
-
-		if ctx.User.ID == nil {
-			ctx.SendResponse(http.StatusForbidden, ctx.User, "Not authenticated as user")
-			return
-		}
-
 		user := us.repo.GetUserByID(*ctx.User.ID)
 		if user == nil {
 			ctx.SendResponse(http.StatusNotFound, nil, "User not found")
