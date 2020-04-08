@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"io/ioutil"
 	"log"
 	"strings"
 	"time"
@@ -18,11 +17,14 @@ import (
 	_ "crypto/sha256"
 )
 
-// JWT holds configuration for signing and verifying
-type JWT struct {
-	Algorithm  string
+// Signer is used to sign tokens
+type Signer struct {
 	PrivateKey *rsa.PrivateKey
-	PublicKey  *rsa.PublicKey
+}
+
+// Verifier is used to verify token
+type Verifier struct {
+	PublicKey *rsa.PublicKey
 }
 
 // Token represents a JWT
@@ -32,36 +34,63 @@ type Token struct {
 	signature []uint8
 }
 
-// NewJWT ...
-func NewJWT(privKeyPath string) *JWT {
-	var dat []byte
-	dat, err := ioutil.ReadFile(privKeyPath)
-	if err != nil {
-		return nil
-	}
+// NewSigner ...
+func NewSigner(pemData []byte) (*Signer, error) {
+	b, _ := pem.Decode(pemData)
 
-	b, _ := pem.Decode(dat)
+	if b.Type != "RSA PRIVATE KEY" {
+		return nil, errors.New("Verifier requires an RSA private key")
+	}
 
 	privKey, err := x509.ParsePKCS1PrivateKey(b.Bytes)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	log.Println("Loaded private key")
 
-	return &JWT{
-		Algorithm:  "RS256",
+	return &Signer{
 		PrivateKey: privKey,
-		PublicKey:  &privKey.PublicKey,
+	}, nil
+}
+
+// NewVerifier ...
+func NewVerifier(pemData []byte) (*Verifier, error) {
+	b, _ := pem.Decode(pemData)
+	if b.Type == "RSA PRIVATE KEY" {
+		return newVerifierFromPrivatekey(b)
+	} else if b.Type == "RSA PUBLIC KEY" {
+		return newVerifierFromPublicKey(b)
 	}
+	return nil, errors.New("Verifier requires an RSA key")
+}
+
+func newVerifierFromPrivatekey(b *pem.Block) (*Verifier, error) {
+	privKey, err := x509.ParsePKCS1PrivateKey(b.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return &Verifier{
+		PublicKey: &privKey.PublicKey,
+	}, nil
+}
+
+func newVerifierFromPublicKey(b *pem.Block) (*Verifier, error) {
+	pubKey, err := x509.ParsePKCS1PublicKey(b.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return &Verifier{
+		PublicKey: pubKey,
+	}, nil
 }
 
 // CreateToken prepares a new Token
-func (jwt *JWT) CreateToken() *Token {
+func CreateToken() *Token {
 	return &Token{
 		header: map[string]string{
 			"typ": "jwt",
-			"alg": jwt.Algorithm,
+			"alg": "RS256",
 		},
 		Body:      map[string]interface{}{},
 		signature: []byte{},
@@ -69,7 +98,7 @@ func (jwt *JWT) CreateToken() *Token {
 }
 
 // Decode will decode the payload without verifying the signature
-func (jwt *JWT) Decode(jwtStr string) (*Token, error) {
+func (v *Verifier) Decode(jwtStr string) (*Token, error) {
 	var token Token
 
 	strs := strings.Split(jwtStr, ".")
@@ -88,11 +117,11 @@ func (jwt *JWT) Decode(jwtStr string) (*Token, error) {
 	return &token, nil
 }
 
-// Verify checks whether the given signature is valid
-func (jwt *JWT) Verify(jwtStr string) (*Token, error) {
+// Verify decodes a token and checks whether the given signature is valid
+func (v *Verifier) Verify(jwtStr string) (*Token, error) {
 	var err error
 
-	token, err := jwt.Decode(jwtStr)
+	token, err := v.Decode(jwtStr)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +134,7 @@ func (jwt *JWT) Verify(jwtStr string) (*Token, error) {
 	sha256 := crypto.SHA256.New()
 	sha256.Write([]byte(hashInput))
 	hashed := sha256.Sum(nil)
-	err = rsa.VerifyPKCS1v15(jwt.PublicKey, crypto.SHA256, hashed, token.signature)
+	err = rsa.VerifyPKCS1v15(v.PublicKey, crypto.SHA256, hashed, token.signature)
 
 	if err != nil {
 		return nil, errors.New("Invalid JWT signature")
@@ -122,7 +151,7 @@ func (jwt *JWT) Verify(jwtStr string) (*Token, error) {
 }
 
 // Sign will add a signature to the given payload
-func (jwt *JWT) Sign(t *Token) string {
+func (s *Signer) Sign(t *Token) string {
 	var r []byte
 	// Encode header
 	r, _ = json.Marshal(t.header)
@@ -136,7 +165,7 @@ func (jwt *JWT) Sign(t *Token) string {
 	sha256 := crypto.SHA256.New()
 	sha256.Write([]byte(headerB64 + "." + bodyB64))
 	hashed := sha256.Sum(nil)
-	sig, _ := rsa.SignPKCS1v15(rand.Reader, jwt.PrivateKey, crypto.SHA256, hashed)
+	sig, _ := rsa.SignPKCS1v15(rand.Reader, s.PrivateKey, crypto.SHA256, hashed)
 	sigB64 := base64.RawURLEncoding.EncodeToString(sig)
 
 	return headerB64 + "." + bodyB64 + "." + sigB64

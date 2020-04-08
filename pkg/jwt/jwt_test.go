@@ -13,36 +13,43 @@ import (
 	"github.com/timvosch/togo/pkg/jwt"
 )
 
-func createJWT() jwt.JWT {
-	// Gen keys
-	privKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	pubKey := &privKey.PublicKey
-	pemKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PUBLIC KEY",
-		Bytes: x509.MarshalPKCS1PublicKey(pubKey),
-	})
-	log.Println("Got pubkey:\n", string(pemKey))
-
-	jwt := jwt.JWT{
-		Algorithm:  "RS256",
-		PrivateKey: privKey,
-		PublicKey:  pubKey,
+func createPEM() []byte {
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		log.Fatalln("Error occured while creating rsa key: ", err)
 	}
+	// pubKey := &privKey.PublicKey
+	pemKey := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privKey),
+	})
+	return pemKey
+}
 
-	return jwt
+func createSet() (*jwt.Signer, *jwt.Verifier, []byte) {
+	pem := createPEM()
+	signer, err := jwt.NewSigner(pem)
+	if err != nil {
+		log.Fatalln("Error occured while creating signer: ", err)
+	}
+	verifier, err := jwt.NewVerifier(pem)
+	if err != nil {
+		log.Fatalln("Error occured while creating verifier: ", err)
+	}
+	return signer, verifier, pem
 }
 
 func TestSignDoesVerify(t *testing.T) {
-	jwt := createJWT()
+	signer, verifier, _ := createSet()
 	token := jwt.CreateToken()
 	token.Body = map[string]interface{}{
 		"wow": "hello",
 	}
 
-	jwtStr := jwt.Sign(token)
+	jwtStr := signer.Sign(token)
 	t.Log("Got jwt:\n", jwtStr)
 
-	_, err := jwt.Verify(jwtStr)
+	_, err := verifier.Verify(jwtStr)
 
 	if err != nil {
 		t.Fatal("Failed to verify our own signed token")
@@ -50,17 +57,18 @@ func TestSignDoesVerify(t *testing.T) {
 }
 
 func TestErrorInvalidSignature(t *testing.T) {
-	jwt1 := createJWT()
-	jwt2 := createJWT()
-	token := jwt1.CreateToken()
+	// signer and verifier do not share the PEM key, therefore are different
+	_, verifier, _ := createSet()
+	signer, _, _ := createSet()
+	token := jwt.CreateToken()
 	token.Body = map[string]interface{}{
 		"wow": "hello",
 	}
 
-	jwtStr := jwt1.Sign(token)
+	jwtStr := signer.Sign(token)
 	t.Log("Got jwt:\n", jwtStr)
 
-	_, err := jwt2.Verify(jwtStr)
+	_, err := verifier.Verify(jwtStr)
 
 	if err == nil {
 		t.Fatal("Incorrect signature did not throw")
@@ -68,10 +76,10 @@ func TestErrorInvalidSignature(t *testing.T) {
 }
 
 func TestErrorIncorrectJwtFormat(t *testing.T) {
-	jwt := createJWT()
+	_, verifier, _ := createSet()
 	jwtStr := "incorrectJWT"
 
-	_, err := jwt.Verify(jwtStr)
+	_, err := verifier.Verify(jwtStr)
 
 	if err == nil {
 		t.Fatal("Incorrect JWT format did not throw")
@@ -79,16 +87,16 @@ func TestErrorIncorrectJwtFormat(t *testing.T) {
 }
 
 func TestExpiredToken(t *testing.T) {
-	jwt := createJWT()
+	signer, verifier, _ := createSet()
 	token := jwt.CreateToken()
 	token.Body = map[string]interface{}{
 		"exp": time.Now().Unix() - 10,
 	}
 
-	jwtStr := jwt.Sign(token)
+	jwtStr := signer.Sign(token)
 	log.Println("Got jwt:\n", jwtStr)
 
-	_, err := jwt.Verify(jwtStr)
+	_, err := verifier.Verify(jwtStr)
 
 	if err == nil {
 		t.Fatal("Expired JWT was verified")
