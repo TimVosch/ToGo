@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"log"
 	"strings"
 	"time"
 
@@ -46,8 +45,6 @@ func NewSigner(pemData []byte) (*Signer, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("Loaded private key")
 
 	return &Signer{
 		PrivateKey: privKey,
