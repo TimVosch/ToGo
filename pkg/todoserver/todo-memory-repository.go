@@ -5,10 +5,10 @@ import "errors"
 // TodoMemoryRepository is an in memory Database for the TodoServer
 type TodoMemoryRepository struct {
 	todos  []TodoEntry
-	lastID int
+	lastID int64
 }
 
-func (db *TodoMemoryRepository) nextID() int {
+func (db *TodoMemoryRepository) nextID() int64 {
 	db.lastID++
 	return db.lastID
 }
@@ -22,7 +22,7 @@ func NewTodoMemoryRepository() *TodoMemoryRepository {
 }
 
 // GetTodoByID ...
-func (db *TodoMemoryRepository) GetTodoByID(id int) *TodoEntry {
+func (db *TodoMemoryRepository) GetTodoByID(id int64) *TodoEntry {
 	// Try to find the todo
 	for _, v := range db.todos {
 		if v.ID == id {
@@ -33,7 +33,7 @@ func (db *TodoMemoryRepository) GetTodoByID(id int) *TodoEntry {
 }
 
 // GetTodosForUser ...
-func (db *TodoMemoryRepository) GetTodosForUser(id int) []TodoEntry {
+func (db *TodoMemoryRepository) GetTodosForUser(id int64) []TodoEntry {
 	return db.todos
 }
 
@@ -45,7 +45,7 @@ func (db *TodoMemoryRepository) InsertTodo(todo TodoEntry) (*TodoEntry, error) {
 }
 
 // DeleteTodo ...
-func (db *TodoMemoryRepository) DeleteTodo(id int) error {
+func (db *TodoMemoryRepository) DeleteTodo(id int64) error {
 	for i, v := range db.todos {
 		if v.ID == id {
 			// Remove from slice

@@ -36,16 +36,13 @@ func (us *UserServer) handleRegisterUser() api.HandlerFunc {
 
 func (us *UserServer) handleGetUserSelf() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
-		// Get uid from authenticated user
-		idf, ok := ctx.User["sub"].(float64)
-		id := int(idf)
 
-		if ok == false {
+		if ctx.User.ID == nil {
 			ctx.SendResponse(http.StatusForbidden, ctx.User, "Not authenticated as user")
 			return
 		}
 
-		user := us.repo.GetUserByID(id)
+		user := us.repo.GetUserByID(*ctx.User.ID)
 		if user == nil {
 			ctx.SendResponse(http.StatusNotFound, nil, "User not found")
 			return

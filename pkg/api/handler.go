@@ -4,11 +4,17 @@ import (
 	"net/http"
 )
 
+// User represents the authenticated user
+type User struct {
+	ID    *int64
+	Token map[string]interface{}
+}
+
 // CTX represents the request context
 type CTX struct {
 	W    http.ResponseWriter
 	R    *http.Request
-	User map[string]interface{}
+	User *User
 }
 
 // HandlerFunc represents and API request handler
@@ -21,7 +27,7 @@ func Handler(handlers ...HandlerFunc) http.HandlerFunc {
 		ctx := &CTX{
 			w,
 			r,
-			nil,
+			&User{},
 		}
 
 		/*

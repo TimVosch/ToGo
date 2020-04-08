@@ -3,10 +3,10 @@ package userserver
 // UserMemoryRepository is an in memory repository
 type UserMemoryRepository struct {
 	store  []User
-	lastID int
+	lastID int64
 }
 
-func (repo *UserMemoryRepository) nextID() int {
+func (repo *UserMemoryRepository) nextID() int64 {
 	repo.lastID++
 	return repo.lastID
 }
@@ -30,7 +30,7 @@ func (repo *UserMemoryRepository) GetUserByEmail(email string) *User {
 }
 
 // GetUserByID ...
-func (repo *UserMemoryRepository) GetUserByID(id int) *User {
+func (repo *UserMemoryRepository) GetUserByID(id int64) *User {
 	for _, v := range repo.store {
 		if v.ID == id {
 			return &v

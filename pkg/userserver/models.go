@@ -4,7 +4,7 @@ import "golang.org/x/crypto/bcrypt"
 
 // User represent a system account
 type User struct {
-	ID       int    `json:"id"`
+	ID       int64  `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }

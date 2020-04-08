@@ -21,7 +21,7 @@ func (ts *TodoServer) handleHealthCheck() api.HandlerFunc {
 
 func (ts *TodoServer) handleGetTodos() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
-		todos := ts.db.GetTodosForUser(0)
+		todos := ts.db.GetTodosForUser(*ctx.User.ID)
 		ctx.SendResponse(http.StatusOK, todos, "Returned all Todos for given user")
 	}
 }
@@ -31,7 +31,7 @@ func (ts *TodoServer) handleGetTodo() api.HandlerFunc {
 		params := mux.Vars(ctx.R)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
 
-		todo := ts.db.GetTodoByID(int(id))
+		todo := ts.db.GetTodoByID(id)
 
 		ctx.SendResponse(http.StatusOK, todo, "Returned Todo with given id")
 	}
@@ -43,12 +43,11 @@ func (ts *TodoServer) handleCreateTodo() api.HandlerFunc {
 		json.NewDecoder(ctx.R.Body).Decode(&todo)
 
 		// Set owner
-		id, ok := ctx.User["sub"].(float64)
-		if !ok {
+		if ctx.User.ID == nil {
 			ctx.SendResponse(http.StatusUnauthorized, nil, "Authenticated is not a user")
 			return
 		}
-		todo.OwnerID = int(id)
+		todo.OwnerID = *ctx.User.ID
 
 		// Insert
 		created, err := ts.db.InsertTodo(todo)
@@ -66,7 +65,7 @@ func (ts *TodoServer) handleDeleteTodo() api.HandlerFunc {
 		params := mux.Vars(ctx.R)
 		id, _ := strconv.ParseInt(params["id"], 10, 0)
 
-		err := ts.db.DeleteTodo(int(id))
+		err := ts.db.DeleteTodo(id)
 		if err != nil {
 			ctx.SendResponse(http.StatusNotFound, nil, "An error occured while deleting Todo")
 			return
