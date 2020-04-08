@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/timvosch/togo/pkg/api"
+	"github.com/timvosch/togo/pkg/common/middleware"
 
 	"github.com/gorilla/mux"
 )
@@ -79,27 +79,9 @@ func (ts *TodoServer) handleDeleteTodo() api.HandlerFunc {
 	}
 }
 
-// TODO: Would be nice if there was a way to avoid type assertion everytime user id was required.
-func (ts *TodoServer) auth() api.HandlerFunc {
-	return func(ctx *api.CTX, next func()) {
-		header := ctx.R.Header.Get("Authorization")
-		parts := strings.Split(header, " ")
-		if len(parts) != 2 {
-			ctx.SendResponse(http.StatusUnauthorized, nil, "Malformed or missing Authorization header")
-			return
-		}
-		token, err := ts.jwt.Verify(parts[1])
-		if err != nil {
-			ctx.SendResponse(http.StatusUnauthorized, nil, "Invalid or expired token")
-			return
-		}
-		ctx.User = token.Body
-		next()
-	}
-}
-
 func setRoutes(ts *TodoServer) {
 	r := ts.router
+	auth := middleware.MakeAuth(ts.jwt)
 
 	//
 	r.HandleFunc(
@@ -113,7 +95,7 @@ func setRoutes(ts *TodoServer) {
 	r.HandleFunc(
 		"/todos/{id:[0-9]+}",
 		api.Handler(
-			ts.auth(),
+			auth(),
 			ts.handleGetTodo(),
 		),
 	).Methods("GET")
@@ -122,7 +104,7 @@ func setRoutes(ts *TodoServer) {
 	r.HandleFunc(
 		"/todos/{id:[0-9]+}",
 		api.Handler(
-			ts.auth(),
+			auth(),
 			ts.handleDeleteTodo(),
 		),
 	).Methods("DELETE")
@@ -131,7 +113,7 @@ func setRoutes(ts *TodoServer) {
 	r.HandleFunc(
 		"/todos",
 		api.Handler(
-			ts.auth(),
+			auth(),
 			ts.handleGetTodos(),
 		),
 	).Methods("GET")
@@ -140,7 +122,7 @@ func setRoutes(ts *TodoServer) {
 	r.HandleFunc(
 		"/todos",
 		api.Handler(
-			ts.auth(),
+			auth(),
 			ts.handleCreateTodo(),
 		),
 	).Methods("POST")

@@ -3,9 +3,9 @@ package userserver
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/timvosch/togo/pkg/api"
+	"github.com/timvosch/togo/pkg/common/middleware"
 )
 
 func (us *UserServer) handleHealthCheck() api.HandlerFunc {
@@ -81,39 +81,28 @@ func (us *UserServer) handleLogin() api.HandlerFunc {
 	}
 }
 
-// Handler
-func (us *UserServer) auth() api.HandlerFunc {
+func (us *UserServer) handleGetJWKS() api.HandlerFunc {
 	return func(ctx *api.CTX, next func()) {
-		header := ctx.R.Header.Get("Authorization")
-		parts := strings.Split(header, " ")
-		if len(parts) != 2 {
-			ctx.SendResponse(http.StatusUnauthorized, nil, "Must be authenticated")
-			return
-		}
-		if parts[0] != "Bearer" {
-			ctx.SendResponse(http.StatusUnauthorized, nil, "Authorization method not supported")
-			return
-		}
-
-		token, err := us.verifier.Verify(parts[1])
-		if err != nil {
-			ctx.SendResponse(http.StatusUnauthorized, nil, "Provided JWT is invalid")
-			return
-		}
-
-		ctx.User = token.Body
-		next()
+		json.NewEncoder(ctx.W).Encode(us.jwks)
 	}
 }
 
 func setRoutes(us *UserServer) {
 	r := us.router
+	auth := middleware.MakeAuth(us.verifier)
+
+	r.HandleFunc(
+		"/.well-known/jwks.json",
+		api.Handler(
+			us.handleGetJWKS(),
+		),
+	)
 
 	//
 	r.HandleFunc(
 		"/health",
 		api.Handler(
-			us.auth(),
+			auth(),
 			us.handleHealthCheck(),
 		),
 	).Methods("GET")
@@ -134,7 +123,7 @@ func setRoutes(us *UserServer) {
 	r.HandleFunc(
 		"/users/self",
 		api.Handler(
-			us.auth(),
+			auth(),
 			us.handleGetUserSelf(),
 		),
 	).Methods("GET")

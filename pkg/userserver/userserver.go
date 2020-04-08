@@ -2,6 +2,8 @@ package userserver
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/timvosch/togo/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/square/go-jose.v2"
 )
 
 // UserServer ...
@@ -20,25 +23,36 @@ type UserServer struct {
 	repo       UserRepository
 	signer     *jwt.Signer
 	verifier   *jwt.Verifier
+	jwks       *jose.JSONWebKeySet
 }
 
-func createJWT(keyFilePath string) (*jwt.Signer, *jwt.Verifier) {
-	data, err := ioutil.ReadFile(keyFilePath)
-	if err != nil {
-		log.Fatalln("Could not read private key file: ", err)
-	}
-
-	signer, err := jwt.NewSigner(data)
+func createJWT(keyData []byte) (*jwt.Signer, *jwt.Verifier) {
+	signer, err := jwt.NewSigner(keyData)
 	if err != nil {
 		log.Fatalln("Could not create signer: ", err)
 	}
 
-	verifier, err := jwt.NewVerifier(data)
+	verifier, err := jwt.NewVerifier(keyData)
 	if err != nil {
 		log.Fatalln("Could verifier: ", err)
 	}
 
 	return signer, verifier
+}
+
+func createJWK(keyData []byte) *jose.JSONWebKey {
+	b, _ := pem.Decode(keyData)
+	key, _ := x509.ParsePKCS1PrivateKey(b.Bytes)
+
+	// Create jwk
+	var jwk = &jose.JSONWebKey{
+		Key:       key,
+		Algorithm: "RS256",
+		Use:       "sig",
+		KeyID:     "0",
+	}
+
+	return jwk
 }
 
 // NewServer creates a new server
@@ -51,7 +65,13 @@ func NewServer(addr, privKeyPath string) *UserServer {
 	}
 	repo := NewUserMemoryRepository()
 
-	signer, verifier := createJWT("./private.pem")
+	// JWT and JWK
+	data, err := ioutil.ReadFile("./private.pem")
+	if err != nil {
+		log.Fatalln("Could not read private key file: ", err)
+	}
+	signer, verifier := createJWT(data)
+	jwk := createJWK(data).Public()
 
 	// Build UserServer struct
 	s := &UserServer{
@@ -60,6 +80,11 @@ func NewServer(addr, privKeyPath string) *UserServer {
 		repo,
 		signer,
 		verifier,
+		&jose.JSONWebKeySet{
+			Keys: []jose.JSONWebKey{
+				jwk,
+			},
+		},
 	}
 
 	setRoutes(s)
