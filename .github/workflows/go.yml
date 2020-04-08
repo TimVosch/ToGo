@@ -39,5 +39,5 @@ jobs:
     - name: Upload math result for job 2
       uses: actions/upload-artifact@v1
       with:
-        name: binaries/
+        name: binaries
         path: build/
