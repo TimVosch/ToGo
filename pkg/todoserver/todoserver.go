@@ -2,6 +2,7 @@ package todoserver
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -15,7 +16,21 @@ type TodoServer struct {
 	httpServer *http.Server
 	router     *mux.Router
 	db         TodoRepository
-	jwt        *jwt.JWT
+	jwt        *jwt.Verifier
+}
+
+func createJWT(keyFilePath string) *jwt.Verifier {
+	data, err := ioutil.ReadFile(keyFilePath)
+	if err != nil {
+		log.Fatalln("Could not read key file: ", err)
+	}
+
+	verifier, err := jwt.NewVerifier(data)
+	if err != nil {
+		log.Fatalln("Could not create verifier: ", err)
+	}
+
+	return verifier
 }
 
 // NewServer creates a new server
@@ -27,7 +42,7 @@ func NewServer(addr string) *TodoServer {
 		Handler: router,
 	}
 	db := NewTodoMemoryRepository()
-	jwt := jwt.NewJWT("./private.pem")
+	jwt := createJWT("./private.pem")
 
 	// Build TodoServer struct
 	s := &TodoServer{

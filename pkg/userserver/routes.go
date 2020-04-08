@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/timvosch/togo/pkg/api"
-	"github.com/timvosch/togo/pkg/jwt"
 )
 
 func (us *UserServer) handleHealthCheck() api.HandlerFunc {
@@ -82,42 +81,39 @@ func (us *UserServer) handleLogin() api.HandlerFunc {
 	}
 }
 
-func makeAuthMiddleware(jwt *jwt.JWT) func() api.HandlerFunc {
-	// Handler
-	return func() api.HandlerFunc {
-		return func(ctx *api.CTX, next func()) {
-			header := ctx.R.Header.Get("Authorization")
-			parts := strings.Split(header, " ")
-			if len(parts) != 2 {
-				ctx.SendResponse(http.StatusUnauthorized, nil, "Must be authenticated")
-				return
-			}
-			if parts[0] != "Bearer" {
-				ctx.SendResponse(http.StatusUnauthorized, nil, "Authorization method not supported")
-				return
-			}
-
-			token, err := jwt.Verify(parts[1])
-			if err != nil {
-				ctx.SendResponse(http.StatusUnauthorized, nil, "Provided JWT is invalid")
-				return
-			}
-
-			ctx.User = token.Body
-			next()
+// Handler
+func (us *UserServer) auth() api.HandlerFunc {
+	return func(ctx *api.CTX, next func()) {
+		header := ctx.R.Header.Get("Authorization")
+		parts := strings.Split(header, " ")
+		if len(parts) != 2 {
+			ctx.SendResponse(http.StatusUnauthorized, nil, "Must be authenticated")
+			return
 		}
+		if parts[0] != "Bearer" {
+			ctx.SendResponse(http.StatusUnauthorized, nil, "Authorization method not supported")
+			return
+		}
+
+		token, err := us.verifier.Verify(parts[1])
+		if err != nil {
+			ctx.SendResponse(http.StatusUnauthorized, nil, "Provided JWT is invalid")
+			return
+		}
+
+		ctx.User = token.Body
+		next()
 	}
 }
 
 func setRoutes(us *UserServer) {
 	r := us.router
-	auth := makeAuthMiddleware(us.jwt)
 
 	//
 	r.HandleFunc(
 		"/health",
 		api.Handler(
-			auth(),
+			us.auth(),
 			us.handleHealthCheck(),
 		),
 	).Methods("GET")
@@ -138,7 +134,7 @@ func setRoutes(us *UserServer) {
 	r.HandleFunc(
 		"/users/self",
 		api.Handler(
-			auth(),
+			us.auth(),
 			us.handleGetUserSelf(),
 		),
 	).Methods("GET")

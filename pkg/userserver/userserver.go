@@ -3,6 +3,7 @@ package userserver
 import (
 	"context"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -17,7 +18,27 @@ type UserServer struct {
 	httpServer *http.Server
 	router     *mux.Router
 	repo       UserRepository
-	jwt        *jwt.JWT
+	signer     *jwt.Signer
+	verifier   *jwt.Verifier
+}
+
+func createJWT(keyFilePath string) (*jwt.Signer, *jwt.Verifier) {
+	data, err := ioutil.ReadFile(keyFilePath)
+	if err != nil {
+		log.Fatalln("Could not read private key file: ", err)
+	}
+
+	signer, err := jwt.NewSigner(data)
+	if err != nil {
+		log.Fatalln("Could not create signer: ", err)
+	}
+
+	verifier, err := jwt.NewVerifier(data)
+	if err != nil {
+		log.Fatalln("Could verifier: ", err)
+	}
+
+	return signer, verifier
 }
 
 // NewServer creates a new server
@@ -29,18 +50,16 @@ func NewServer(addr, privKeyPath string) *UserServer {
 		Handler: router,
 	}
 	repo := NewUserMemoryRepository()
-	j := jwt.NewJWT(privKeyPath)
 
-	if j == nil {
-		log.Fatalln("Could not create JWT")
-	}
+	signer, verifier := createJWT("./private.pem")
 
 	// Build UserServer struct
 	s := &UserServer{
 		httpServer,
 		router,
 		repo,
-		j,
+		signer,
+		verifier,
 	}
 
 	setRoutes(s)
@@ -79,9 +98,9 @@ func (us *UserServer) loginUser(email, password string) (string, error) {
 	}
 
 	// Create token with subject as user ID
-	token := us.jwt.CreateToken()
+	token := jwt.CreateToken()
 	token.Body = map[string]interface{}{
 		"sub": user.ID,
 	}
-	return us.jwt.Sign(token), nil
+	return us.signer.Sign(token), nil
 }
