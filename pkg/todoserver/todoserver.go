@@ -2,12 +2,13 @@ package todoserver
 
 import (
 	"context"
-	"io/ioutil"
+	"crypto/rsa"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/timvosch/togo/pkg/common/keys"
 	"github.com/timvosch/togo/pkg/jwt"
 )
 
@@ -19,22 +20,28 @@ type TodoServer struct {
 	jwt        *jwt.Verifier
 }
 
-func createJWT(keyFilePath string) *jwt.Verifier {
-	data, err := ioutil.ReadFile(keyFilePath)
+func createJWT(jwksURL string) *jwt.Verifier {
+	jwks, err := keys.FetchPublicKeys(jwksURL)
 	if err != nil {
 		log.Fatalln("Could not read key file: ", err)
 	}
 
-	verifier, err := jwt.NewVerifier(data)
-	if err != nil {
-		log.Fatalln("Could not create verifier: ", err)
+	// Decode JWK into PubKey
+	pubKey, ok := jwks.Keys[0].Key.(*rsa.PublicKey)
+	if !ok {
+		log.Fatalln("Could not create RSA key from JWK.")
 	}
 
-	return verifier
+	// Create verifier with pubkey
+	v := &jwt.Verifier{
+		PublicKey: pubKey,
+	}
+
+	return v
 }
 
 // NewServer creates a new server
-func NewServer(addr string) *TodoServer {
+func NewServer(addr, jwksURL string) *TodoServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
@@ -42,7 +49,7 @@ func NewServer(addr string) *TodoServer {
 		Handler: router,
 	}
 	db := NewTodoMemoryRepository()
-	jwt := createJWT("./private.pem")
+	jwt := createJWT(jwksURL)
 
 	// Build TodoServer struct
 	s := &TodoServer{
