@@ -1,5 +1,7 @@
 package userserver
 
+import "errors"
+
 // UserMemoryRepository is an in memory repository
 type UserMemoryRepository struct {
 	store  []User
@@ -41,6 +43,11 @@ func (repo *UserMemoryRepository) GetUserByID(id int64) *User {
 
 // InsertUser ...
 func (repo *UserMemoryRepository) InsertUser(user User) (*User, error) {
+	// Check if email is already used
+	duplicate := repo.GetUserByEmail(user.Email)
+	if duplicate != nil {
+		return nil, errors.New("User with that email is already registered")
+	}
 	user.ID = repo.nextID()
 	repo.store = append(repo.store, user)
 	return &user, nil

@@ -27,7 +27,8 @@ func (us *UserServer) handleRegisterUser() api.HandlerFunc {
 
 		created, err := us.repo.InsertUser(user)
 		if err != nil {
-			ctx.SendResponse(http.StatusInternalServerError, err, "An error occured while registering user")
+			ctx.SendResponse(http.StatusBadRequest, nil, err.Error())
+			return
 		}
 
 		ctx.SendResponse(http.StatusCreated, created, "User registered")
