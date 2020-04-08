@@ -34,7 +34,13 @@ func (db *TodoMemoryRepository) GetTodoByID(id int64) *TodoEntry {
 
 // GetTodosForUser ...
 func (db *TodoMemoryRepository) GetTodosForUser(id int64) []TodoEntry {
-	return db.todos
+	result := make([]TodoEntry, 0)
+	for _, v := range db.todos {
+		if v.OwnerID == id {
+			result = append(result, v)
+		}
+	}
+	return result
 }
 
 // InsertTodo ...
