@@ -4,10 +4,8 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"strings"
 	"time"
@@ -34,52 +32,27 @@ type Token struct {
 }
 
 // NewSigner ...
-func NewSigner(pemData []byte) (*Signer, error) {
-	b, _ := pem.Decode(pemData)
-
-	if b.Type != "RSA PRIVATE KEY" {
-		return nil, errors.New("Verifier requires an RSA private key")
-	}
-
-	privKey, err := x509.ParsePKCS1PrivateKey(b.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
+func NewSigner(key *rsa.PrivateKey) *Signer {
 	return &Signer{
-		PrivateKey: privKey,
-	}, nil
+		PrivateKey: key,
+	}
 }
 
-// NewVerifier ...
-func NewVerifier(pemData []byte) (*Verifier, error) {
-	b, _ := pem.Decode(pemData)
-	if b.Type == "RSA PRIVATE KEY" {
-		return newVerifierFromPrivatekey(b)
-	} else if b.Type == "RSA PUBLIC KEY" {
-		return newVerifierFromPublicKey(b)
+// NewVerifier creates a verifier from an RSA key.
+// This can be a public key or private key
+func NewVerifier(k interface{}) (*Verifier, error) {
+	switch key := k.(type) {
+	case *rsa.PublicKey:
+		return &Verifier{
+			PublicKey: key,
+		}, nil
+	case *rsa.PrivateKey:
+		return &Verifier{
+			PublicKey: &key.PublicKey,
+		}, nil
+	default:
+		return nil, errors.New("Verifier requires an RSA key")
 	}
-	return nil, errors.New("Verifier requires an RSA key")
-}
-
-func newVerifierFromPrivatekey(b *pem.Block) (*Verifier, error) {
-	privKey, err := x509.ParsePKCS1PrivateKey(b.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	return &Verifier{
-		PublicKey: &privKey.PublicKey,
-	}, nil
-}
-
-func newVerifierFromPublicKey(b *pem.Block) (*Verifier, error) {
-	pubKey, err := x509.ParsePKCS1PublicKey(b.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	return &Verifier{
-		PublicKey: pubKey,
-	}, nil
 }
 
 // CreateToken prepares a new Token

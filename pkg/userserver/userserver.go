@@ -2,7 +2,10 @@ package userserver
 
 import (
 	"context"
+	"crypto"
+	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"io/ioutil"
@@ -26,24 +29,31 @@ type UserServer struct {
 	jwks       *jose.JSONWebKeySet
 }
 
-func createJWT(keyData []byte) (*jwt.Signer, *jwt.Verifier) {
-	signer, err := jwt.NewSigner(keyData)
+func readKey(path string) *rsa.PrivateKey {
+	data, err := ioutil.ReadFile("./private.pem")
 	if err != nil {
-		log.Fatalln("Could not create signer: ", err)
+		log.Fatalln("Could not read private key file: ", err)
 	}
-
-	verifier, err := jwt.NewVerifier(keyData)
+	b, _ := pem.Decode(data)
+	key, err := x509.ParsePKCS1PrivateKey(b.Bytes)
 	if err != nil {
-		log.Fatalln("Could verifier: ", err)
+		log.Fatalln("Could not create private key from file: ", err)
+	}
+	return key
+}
+
+func createJWT(key *rsa.PrivateKey) (*jwt.Signer, *jwt.Verifier) {
+	signer := jwt.NewSigner(key)
+
+	verifier, err := jwt.NewVerifier(key)
+	if err != nil {
+		log.Fatalln("Could not create verifier: ", err)
 	}
 
 	return signer, verifier
 }
 
-func createJWK(keyData []byte) *jose.JSONWebKey {
-	b, _ := pem.Decode(keyData)
-	key, _ := x509.ParsePKCS1PrivateKey(b.Bytes)
-
+func createJWKS(key *rsa.PrivateKey) *jose.JSONWebKeySet {
 	// Create jwk
 	var jwk = &jose.JSONWebKey{
 		Key:       key,
@@ -52,7 +62,16 @@ func createJWK(keyData []byte) *jose.JSONWebKey {
 		KeyID:     "0",
 	}
 
-	return jwk
+	kid, _ := jwk.Thumbprint(crypto.SHA1)
+	jwk.KeyID = base64.RawURLEncoding.EncodeToString(kid)
+
+	jwks := &jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{
+			jwk.Public(),
+		},
+	}
+
+	return jwks
 }
 
 // NewServer creates a new server
@@ -66,12 +85,9 @@ func NewServer(addr, privKeyPath string) *UserServer {
 	repo := NewUserMemoryRepository()
 
 	// JWT and JWK
-	data, err := ioutil.ReadFile("./private.pem")
-	if err != nil {
-		log.Fatalln("Could not read private key file: ", err)
-	}
-	signer, verifier := createJWT(data)
-	jwk := createJWK(data).Public()
+	key := readKey(privKeyPath)
+	signer, verifier := createJWT(key)
+	jwks := createJWKS(key)
 
 	// Build UserServer struct
 	s := &UserServer{
@@ -80,11 +96,7 @@ func NewServer(addr, privKeyPath string) *UserServer {
 		repo,
 		signer,
 		verifier,
-		&jose.JSONWebKeySet{
-			Keys: []jose.JSONWebKey{
-				jwk,
-			},
-		},
+		jwks,
 	}
 
 	setRoutes(s)

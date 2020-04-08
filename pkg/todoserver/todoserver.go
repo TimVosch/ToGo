@@ -33,9 +33,7 @@ func createJWT(jwksURL string) *jwt.Verifier {
 	}
 
 	// Create verifier with pubkey
-	v := &jwt.Verifier{
-		PublicKey: pubKey,
-	}
+	v, _ := jwt.NewVerifier(pubKey)
 
 	return v
 }
