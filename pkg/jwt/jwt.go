@@ -123,6 +123,12 @@ func (v *Verifier) Verify(jwtStr string) (*Token, error) {
 // Sign will add a signature to the given payload
 func (s *Signer) Sign(t *Token) string {
 	var r []byte
+
+	// Set issued at
+	if t.Body["iat"] == nil {
+		t.Body["iat"] = time.Now().Unix()
+	}
+
 	// Encode header
 	r, _ = json.Marshal(t.header)
 	headerB64 := base64.RawURLEncoding.EncodeToString(r)
