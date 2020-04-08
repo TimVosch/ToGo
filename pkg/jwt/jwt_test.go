@@ -4,8 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	_ "crypto/sha256"
-	"crypto/x509"
-	"encoding/pem"
 	"log"
 	"testing"
 	"time"
@@ -13,30 +11,22 @@ import (
 	"github.com/timvosch/togo/pkg/jwt"
 )
 
-func createPEM() []byte {
+func createKey() *rsa.PrivateKey {
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Fatalln("Error occured while creating rsa key: ", err)
 	}
-	// pubKey := &privKey.PublicKey
-	pemKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privKey),
-	})
-	return pemKey
+	return privKey
 }
 
-func createSet() (*jwt.Signer, *jwt.Verifier, []byte) {
-	pem := createPEM()
-	signer, err := jwt.NewSigner(pem)
-	if err != nil {
-		log.Fatalln("Error occured while creating signer: ", err)
-	}
-	verifier, err := jwt.NewVerifier(pem)
+func createSet() (*jwt.Signer, *jwt.Verifier, *rsa.PrivateKey) {
+	key := createKey()
+	signer := jwt.NewSigner(key)
+	verifier, err := jwt.NewVerifier(key)
 	if err != nil {
 		log.Fatalln("Error occured while creating verifier: ", err)
 	}
-	return signer, verifier, pem
+	return signer, verifier, key
 }
 
 func TestSignDoesVerify(t *testing.T) {
