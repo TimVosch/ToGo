@@ -32,7 +32,6 @@ jobs:
 
     - name: Build
       run: |
-        mkdir build
         go build -o build/ ./cmd/userserver
         go build -o build/ ./cmd/todoserver
         
