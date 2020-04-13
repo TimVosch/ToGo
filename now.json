@@ -4,7 +4,11 @@
     {
       "src": "frontend/package.json",
       "use": "@now/static-build",
-      "buildCommand": "build"
+      "config": {
+        "buildCommand": "build",
+        "devCommand": "watch",
+        "distDir": "public"
+      }
     },
     { "src": "backend/api/index.go", "use": "@now/go" }
   ],
