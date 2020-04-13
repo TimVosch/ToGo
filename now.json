@@ -1,7 +1,11 @@
 {
   "version": 2,
   "builds": [
-    { "src": "frontend/public/**/*", "use": "@now/static" },
+    {
+      "src": "frontend/package.json",
+      "use": "@now/static-build",
+      "buildCommand": "build"
+    },
     { "src": "backend/api/index.go", "use": "@now/go" }
   ],
   "routes": [
