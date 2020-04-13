@@ -1,6 +1,12 @@
 {
   "version": 2,
-  "builds": [{ "src": "api/index.go", "use": "@now/go" }],
-  "routes": [{ "src": "/api/(.*)", "dest": "api/index.go" }],
+  "builds": [
+    { "src": "frontend/public/*.html", "use": "@now/static" },
+    { "src": "backend/api/index.go", "use": "@now/go" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "frontend/public/index.html" },
+    { "src": "/api/(.*)", "dest": "backend/api/index.go" }
+  ],
   "env": {}
 }
