@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "builds": [{ "src": "api/index.go", "use": "@now/go" }],
+  "routes": [{ "src": "/api/(.*)", "dest": "api/index.go" }],
+  "env": {}
+}

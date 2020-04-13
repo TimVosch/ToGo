@@ -51,27 +51,6 @@ func createJWT(key *rsa.PrivateKey) (*jwt.Signer, *jwt.Verifier) {
 	return signer, verifier
 }
 
-// NewServerless creates a UserServer without http server
-func NewServerless(key *rsa.PrivateKey) *UserServer {
-	router := mux.NewRouter()
-	repo := NewUserMemoryRepository()
-	signer, verifier := createJWT(key)
-	jwks := jwt.CreateJWKS(key)
-
-	// Build UserServer struct
-	s := &UserServer{
-		nil,
-		router,
-		repo,
-		signer,
-		verifier,
-		jwks,
-	}
-
-	setRoutes(s)
-	return s
-}
-
 // NewServer creates a new server
 func NewServer(addr, privKeyPath string) *UserServer {
 	// Set up
@@ -99,6 +78,27 @@ func NewServer(addr, privKeyPath string) *UserServer {
 
 	setRoutes(s)
 
+	return s
+}
+
+// NewServerless creates a UserServer without http server
+func NewServerless(key *rsa.PrivateKey, prefix string) *UserServer {
+	router := mux.NewRouter().PathPrefix(prefix).Subrouter()
+	repo := NewUserMemoryRepository()
+	signer, verifier := createJWT(key)
+	jwks := jwt.CreateJWKS(key)
+
+	// Build UserServer struct
+	s := &UserServer{
+		nil,
+		router,
+		repo,
+		signer,
+		verifier,
+		jwks,
+	}
+
+	setRoutes(s)
 	return s
 }
 
