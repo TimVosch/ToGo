@@ -80,7 +80,7 @@ func (us *UserServer) handleGetJWKS() api.HandlerFunc {
 }
 
 func setRoutes(us *UserServer) {
-	r := us.router
+	r := us.Router
 	auth := middleware.MakeAuth(us.verifier)
 
 	r.HandleFunc(

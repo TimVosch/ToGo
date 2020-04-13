@@ -12,6 +12,8 @@ import (
 
 	// Required for SHA256 hashing
 	_ "crypto/sha256"
+
+	"gopkg.in/square/go-jose.v2"
 )
 
 // Signer is used to sign tokens
@@ -145,4 +147,26 @@ func (s *Signer) Sign(t *Token) string {
 	sigB64 := base64.RawURLEncoding.EncodeToString(sig)
 
 	return headerB64 + "." + bodyB64 + "." + sigB64
+}
+
+// CreateJWKS creates a JWKS from the given private key
+func CreateJWKS(key *rsa.PrivateKey) *jose.JSONWebKeySet {
+	// Create jwk
+	var jwk = &jose.JSONWebKey{
+		Key:       key,
+		Algorithm: "RS256",
+		Use:       "sig",
+		KeyID:     "0",
+	}
+
+	kid, _ := jwk.Thumbprint(crypto.SHA1)
+	jwk.KeyID = base64.RawURLEncoding.EncodeToString(kid)
+
+	jwks := &jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{
+			jwk.Public(),
+		},
+	}
+
+	return jwks
 }

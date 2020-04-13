@@ -35,9 +35,9 @@ func main() {
 	}()
 	log.Println("Server is ready to handle requests")
 
-	<-sigChan
+	sig := <-sigChan
 
 	// Shutdown the server
-	log.Println("Shutting down...")
+	log.Println("Shutting down because: ", sig.String())
 	us.Shutdown()
 }

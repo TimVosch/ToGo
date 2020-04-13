@@ -2,10 +2,8 @@ package userserver
 
 import (
 	"context"
-	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"io/ioutil"
@@ -22,7 +20,7 @@ import (
 // UserServer ...
 type UserServer struct {
 	httpServer *http.Server
-	router     *mux.Router
+	Router     *mux.Router
 	repo       UserRepository
 	signer     *jwt.Signer
 	verifier   *jwt.Verifier
@@ -53,25 +51,25 @@ func createJWT(key *rsa.PrivateKey) (*jwt.Signer, *jwt.Verifier) {
 	return signer, verifier
 }
 
-func createJWKS(key *rsa.PrivateKey) *jose.JSONWebKeySet {
-	// Create jwk
-	var jwk = &jose.JSONWebKey{
-		Key:       key,
-		Algorithm: "RS256",
-		Use:       "sig",
-		KeyID:     "0",
+// NewServerless creates a UserServer without http server
+func NewServerless(key *rsa.PrivateKey) *UserServer {
+	router := mux.NewRouter()
+	repo := NewUserMemoryRepository()
+	signer, verifier := createJWT(key)
+	jwks := jwt.CreateJWKS(key)
+
+	// Build UserServer struct
+	s := &UserServer{
+		nil,
+		router,
+		repo,
+		signer,
+		verifier,
+		jwks,
 	}
 
-	kid, _ := jwk.Thumbprint(crypto.SHA1)
-	jwk.KeyID = base64.RawURLEncoding.EncodeToString(kid)
-
-	jwks := &jose.JSONWebKeySet{
-		Keys: []jose.JSONWebKey{
-			jwk.Public(),
-		},
-	}
-
-	return jwks
+	setRoutes(s)
+	return s
 }
 
 // NewServer creates a new server
@@ -87,7 +85,7 @@ func NewServer(addr, privKeyPath string) *UserServer {
 	// JWT and JWK
 	key := readKey(privKeyPath)
 	signer, verifier := createJWT(key)
-	jwks := createJWKS(key)
+	jwks := jwt.CreateJWKS(key)
 
 	// Build UserServer struct
 	s := &UserServer{
