@@ -94,7 +94,6 @@ func setRoutes(us *UserServer) {
 	r.HandleFunc(
 		"/health",
 		api.Handler(
-			auth(),
 			us.handleHealthCheck(),
 		),
 	).Methods("GET")
