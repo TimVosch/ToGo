@@ -33,6 +33,6 @@ func Users(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("Could not read private key!")
 	}
 
-	us := userserver.NewServerless(key)
+	us := userserver.NewServerless()
 	us.Router.ServeHTTP(w, r)
 }
