@@ -46,7 +46,9 @@ func NewServer(addr, jwksURL string) *TodoServer {
 		Addr:    addr,
 		Handler: router,
 	}
-	db := NewTodoMemoryRepository()
+
+	// db := NewTodoMemoryRepository()
+	db := NewMongoRepository("API-KEY-HERE", "togo", "todos")
 	jwt := createJWT(jwksURL)
 
 	// Build TodoServer struct

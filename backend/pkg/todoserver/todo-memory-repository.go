@@ -22,7 +22,7 @@ func NewTodoMemoryRepository() *TodoMemoryRepository {
 }
 
 // GetTodoByID ...
-func (db *TodoMemoryRepository) GetTodoByID(id int64) *TodoEntry {
+func (db *TodoMemoryRepository) GetTodoByID(id interface{}) *TodoEntry {
 	// Try to find the todo
 	for _, v := range db.todos {
 		if v.ID == id {
@@ -51,7 +51,7 @@ func (db *TodoMemoryRepository) InsertTodo(todo TodoEntry) (*TodoEntry, error) {
 }
 
 // DeleteTodo ...
-func (db *TodoMemoryRepository) DeleteTodo(id int64) error {
+func (db *TodoMemoryRepository) DeleteTodo(id interface{}) error {
 	for i, v := range db.todos {
 		if v.ID == id {
 			// Remove from slice
