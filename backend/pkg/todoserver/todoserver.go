@@ -15,7 +15,7 @@ import (
 // TodoServer contains relevant todo Server objects
 type TodoServer struct {
 	httpServer *http.Server
-	router     *mux.Router
+	Router     *mux.Router
 	db         TodoRepository
 	jwt        *jwt.Verifier
 }

@@ -79,7 +79,7 @@ func (ts *TodoServer) handleDeleteTodo() api.HandlerFunc {
 }
 
 func setRoutes(ts *TodoServer) {
-	r := ts.router
+	r := ts.Router
 	auth := middleware.MakeAuth(ts.jwt)
 
 	//

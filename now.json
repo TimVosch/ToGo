@@ -10,7 +10,8 @@
         "distDir": "public"
       }
     },
-    { "src": "backend/api/userserver/index.go", "use": "@now/go" }
+    { "src": "backend/api/userserver/index.go", "use": "@now/go" },
+    { "src": "backend/api/todoserver/index.go", "use": "@now/go" }
   ],
   "routes": [
     {
@@ -22,12 +23,12 @@
       "dest": "backend/api/userserver/index.go"
     },
     {
-      "src": "/api/users(/.*)?",
+      "src": "/api/(users|auth)(/.*)?",
       "dest": "backend/api/userserver/index.go"
     },
     {
-      "src": "/api/auth(/.*)?",
-      "dest": "backend/api/userserver/index.go"
+      "src": "/api/todos(/.*)?",
+      "dest": "backend/api/todoserver/index.go"
     },
     { "src": "/", "dest": "frontend/index.html" },
     { "src": "/(.*)", "dest": "frontend/$1" }
