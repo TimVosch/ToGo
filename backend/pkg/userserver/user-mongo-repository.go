@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/timvosch/togo/pkg/common/mongoutil"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -74,25 +74,12 @@ func (r *UserMongoRepository) GetUserByEmail(email string) *User {
 // GetUserByID ...
 func (r *UserMongoRepository) GetUserByID(id interface{}) *User {
 	var user User
-	var objID primitive.ObjectID
-
-	// Parse to objectID
-	switch i := id.(type) {
-	case string:
-		objID, _ = primitive.ObjectIDFromHex(i)
-		break
-	case primitive.ObjectID:
-		objID = i
-		break
-	default:
-		log.Println("Received invalid id type")
-		return nil
-	}
+	objID := mongoutil.ParseID(id)
 
 	// Find by id and decode
 	ctx, close := context.WithTimeout(context.Background(), time.Second*5)
 	defer close()
-	result := r.collection.FindOne(ctx, bson.M{"_id": objID})
+	result := r.collection.FindOne(ctx, bson.M{"_id": *objID})
 	if err := result.Err(); err != nil {
 		log.Println("Error occured while fetching user by ID: ", err)
 		return nil

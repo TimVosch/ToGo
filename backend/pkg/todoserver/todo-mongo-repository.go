@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/timvosch/togo/pkg/common/mongoutil"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -51,11 +52,12 @@ func NewMongoRepository(connectionString, database, collection string) *TodoMong
 // GetTodoByID ...
 func (r *TodoMongoRepository) GetTodoByID(id interface{}) *TodoEntry {
 	var todo TodoEntry
+	objID := mongoutil.ParseID(id)
 
 	// Find by id and decode
 	ctx, close := context.WithTimeout(context.Background(), time.Second*5)
 	defer close()
-	result := r.collection.FindOne(ctx, bson.M{"_id": id})
+	result := r.collection.FindOne(ctx, bson.M{"_id": objID})
 	if err := result.Err(); err != nil {
 		log.Println("Error occured while fetching todo by ID: ", err)
 		return nil
@@ -73,10 +75,11 @@ func (r *TodoMongoRepository) GetTodoByID(id interface{}) *TodoEntry {
 // GetTodosForUser ...
 func (r *TodoMongoRepository) GetTodosForUser(userID interface{}) []TodoEntry {
 	todos := make([]TodoEntry, 0)
+	objID := mongoutil.ParseID(userID)
 
 	// Find by id and decode
 	ctx, close := context.WithTimeout(context.Background(), time.Second*5)
-	cur, err := r.collection.Find(ctx, bson.M{"ownerid": userID})
+	cur, err := r.collection.Find(ctx, bson.M{"ownerid": objID})
 	defer close()
 	if err != nil {
 		log.Println("Error occured while fetching todos for user: ", err)
@@ -104,6 +107,7 @@ func (r *TodoMongoRepository) GetTodosForUser(userID interface{}) []TodoEntry {
 
 // InsertTodo ...
 func (r *TodoMongoRepository) InsertTodo(todo TodoEntry) (*TodoEntry, error) {
+	todo.OwnerID = mongoutil.ParseID(todo.OwnerID)
 	ctx, close := context.WithTimeout(context.Background(), time.Second*5)
 	defer close()
 	res, err := r.collection.InsertOne(ctx, todo)
@@ -117,9 +121,11 @@ func (r *TodoMongoRepository) InsertTodo(todo TodoEntry) (*TodoEntry, error) {
 
 // DeleteTodo ...
 func (r *TodoMongoRepository) DeleteTodo(id interface{}) error {
+	objID := mongoutil.ParseID(id)
+
 	ctx, close := context.WithTimeout(context.Background(), time.Second*5)
 	defer close()
-	_, err := r.collection.DeleteOne(ctx, bson.M{"ID": id})
+	_, err := r.collection.DeleteOne(ctx, bson.M{"ID": objID})
 	if err != nil {
 		log.Println("Error occured while inserting todo: ", err)
 		return err
