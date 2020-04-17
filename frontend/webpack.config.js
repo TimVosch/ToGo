@@ -67,13 +67,8 @@ module.exports = {
     historyApiFallback: true,
     writeToDisk: true,
     proxy: {
-      "/api/auth": {
+      "/api": {
         target: "http://localhost:3001",
-        pathRewrite: { "^/api": "" },
-      },
-      "/api/todos": {
-        target: "http://localhost:3002",
-        pathRewrite: { "^/api": "" },
       },
     },
   },

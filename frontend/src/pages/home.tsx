@@ -23,8 +23,9 @@ export class HomePage extends Component<{}, HomePageState> {
     this.fetchTodos();
   }
 
-  addTodo(): void {
-    // this.todos.
+  async addTodo(title: string): Promise<void> {
+    await this.todos.addTodo(title);
+    this.fetchTodos();
   }
 
   async fetchTodos(): Promise<void> {

@@ -23,4 +23,20 @@ export class TodoService {
     const body = await res.json();
     return body.data;
   }
+
+  async addTodo(title: string): Promise<Todo> {
+    const todo = {
+      title,
+    };
+    const res = await fetch(this.URL, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + this.login.getToken(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(todo),
+    });
+    const body = await res.json();
+    return body.data;
+  }
 }
