@@ -82,9 +82,9 @@ func NewServer(addr, privKeyPath, mongoURI string) *UserServer {
 }
 
 // NewServerless creates a UserServer without http server
-func NewServerless(key *rsa.PrivateKey, prefix string) *UserServer {
+func NewServerless(key *rsa.PrivateKey, mongoURI, prefix string) *UserServer {
 	router := mux.NewRouter().PathPrefix(prefix).Subrouter()
-	repo := NewUserMemoryRepository()
+	repo := NewUserMongoRepository(mongoURI, "togo", "users")
 	signer, verifier := createJWT(key)
 	jwks := jwt.CreateJWKS(key)
 

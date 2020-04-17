@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/timvosch/togo/pkg/jwt"
 	"github.com/timvosch/togo/pkg/userserver"
@@ -34,6 +35,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("Could not read private key!")
 	}
 
-	us := userserver.NewServerless(key, "/api/")
+	us := userserver.NewServerless(key, os.Getenv("MONGO_URI"), "/api/")
 	us.Router.ServeHTTP(w, r)
 }
