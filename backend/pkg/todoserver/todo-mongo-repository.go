@@ -71,7 +71,7 @@ func (r *TodoMongoRepository) GetTodoByID(id interface{}) *TodoEntry {
 }
 
 // GetTodosForUser ...
-func (r *TodoMongoRepository) GetTodosForUser(userID int64) []TodoEntry {
+func (r *TodoMongoRepository) GetTodosForUser(userID interface{}) []TodoEntry {
 	todos := make([]TodoEntry, 0)
 
 	// Find by id and decode

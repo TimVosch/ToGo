@@ -64,6 +64,24 @@ func NewServer(addr, jwksURL, mongoConnection string) *TodoServer {
 	return s
 }
 
+// NewServerless creates a TodoServer without http server
+func NewServerless(key *rsa.PrivateKey, mongoURI, jwksURL, prefix string) *TodoServer {
+	router := mux.NewRouter().PathPrefix(prefix).Subrouter()
+	db := NewMongoRepository(mongoURI, "togo", "todos")
+	jwt := createJWT(jwksURL)
+
+	// Build UserServer struct
+	s := &TodoServer{
+		nil,
+		router,
+		db,
+		jwt,
+	}
+
+	setRoutes(s)
+	return s
+}
+
 // StartServer creates and starts a TodoServer
 func (s *TodoServer) StartServer() error {
 	return s.httpServer.ListenAndServe()

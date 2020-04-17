@@ -4,5 +4,5 @@ package todoserver
 type TodoEntry struct {
 	ID      interface{} `json:"id" bson:"_id,omitempty"`
 	Title   string      `json:"title"`
-	OwnerID int64       `json:"ownerID"`
+	OwnerID interface{} `json:"ownerID"`
 }

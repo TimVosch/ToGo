@@ -1,4 +1,4 @@
-package api
+package userserver
 
 import (
 	"crypto/rsa"

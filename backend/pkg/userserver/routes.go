@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/timvosch/togo/pkg/api"
 	"github.com/timvosch/togo/pkg/common/middleware"
 )
@@ -44,6 +45,21 @@ func (us *UserServer) handleGetUserSelf() api.HandlerFunc {
 		}
 
 		ctx.SendResponse(http.StatusOK, user, "Fetched user by ID")
+	}
+}
+
+func (us *UserServer) handleGetUserByID() api.HandlerFunc {
+	return func(ctx *api.CTX, next func()) {
+		params := mux.Vars(ctx.R)
+		id, _ := params["id"]
+
+		user := us.repo.GetUserByID(id)
+		if user == nil {
+			ctx.SendResponse(http.StatusNotFound, nil, "User not found")
+			return
+		}
+
+		ctx.SendResponse(http.StatusOK, user, "Returned User with given id")
 	}
 }
 
@@ -101,13 +117,9 @@ func setRoutes(us *UserServer) {
 	//
 	r.HandleFunc(
 		"/auth",
-		api.Handler(us.handleLogin()),
-	).Methods("POST")
-
-	//
-	r.HandleFunc(
-		"/users",
-		api.Handler(us.handleRegisterUser()),
+		api.Handler(
+			us.handleLogin(),
+		),
 	).Methods("POST")
 
 	//
@@ -118,4 +130,21 @@ func setRoutes(us *UserServer) {
 			us.handleGetUserSelf(),
 		),
 	).Methods("GET")
+
+	//
+	r.HandleFunc(
+		"/users/{id:[a-z0-9]+}",
+		api.Handler(
+			auth(),
+			us.handleGetUserByID(),
+		),
+	).Methods("GET")
+
+	//
+	r.HandleFunc(
+		"/users",
+		api.Handler(
+			us.handleRegisterUser(),
+		),
+	).Methods("POST")
 }

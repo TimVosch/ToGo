@@ -33,7 +33,7 @@ func (db *TodoMemoryRepository) GetTodoByID(id interface{}) *TodoEntry {
 }
 
 // GetTodosForUser ...
-func (db *TodoMemoryRepository) GetTodosForUser(id int64) []TodoEntry {
+func (db *TodoMemoryRepository) GetTodosForUser(id interface{}) []TodoEntry {
 	result := make([]TodoEntry, 0)
 	for _, v := range db.todos {
 		if v.OwnerID == id {

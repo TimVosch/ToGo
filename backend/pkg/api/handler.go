@@ -6,7 +6,7 @@ import (
 
 // User represents the authenticated user
 type User struct {
-	ID    *int64
+	ID    *interface{}
 	Token map[string]interface{}
 }
 

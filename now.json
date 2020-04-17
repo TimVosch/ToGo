@@ -10,10 +10,25 @@
         "distDir": "public"
       }
     },
-    { "src": "backend/api/index.go", "use": "@now/go" }
+    { "src": "backend/api/userserver/index.go", "use": "@now/go" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "backend/api/index.go" },
+    {
+      "src": "/.well-known/jwks.json",
+      "dest": "/api/.well-known/jwks.json"
+    },
+    {
+      "src": "/api/.well-known/jwks.json",
+      "dest": "backend/api/userserver/index.go"
+    },
+    {
+      "src": "/api/users(/.*)?",
+      "dest": "backend/api/userserver/index.go"
+    },
+    {
+      "src": "/api/auth(/.*)?",
+      "dest": "backend/api/userserver/index.go"
+    },
     { "src": "/", "dest": "frontend/index.html" },
     { "src": "/(.*)", "dest": "frontend/$1" }
   ],

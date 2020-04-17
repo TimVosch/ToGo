@@ -33,11 +33,9 @@ func MakeAuth(v *jwt.Verifier) wrappedHandlerFunc {
 
 			user := &api.User{}
 			user.Token = token.Body
-			idF64, ok := token.Body["sub"].(float64)
-			if ok {
-				id := int64(idF64)
-				user.ID = &id
-			}
+
+			id := token.Body["sub"]
+			user.ID = &id
 			ctx.User = user
 			next()
 		}
