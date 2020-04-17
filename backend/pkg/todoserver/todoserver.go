@@ -39,7 +39,7 @@ func createJWT(jwksURL string) *jwt.Verifier {
 }
 
 // NewServer creates a new server
-func NewServer(addr, jwksURL string) *TodoServer {
+func NewServer(addr, jwksURL, mongoConnection string) *TodoServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
@@ -48,7 +48,7 @@ func NewServer(addr, jwksURL string) *TodoServer {
 	}
 
 	// db := NewTodoMemoryRepository()
-	db := NewMongoRepository("API-KEY-HERE", "togo", "todos")
+	db := NewMongoRepository(mongoConnection, "togo", "todos")
 	jwt := createJWT(jwksURL)
 
 	// Build TodoServer struct

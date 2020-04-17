@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	addr    = flag.String("addr", ":3000", "Set the listening address")
-	jwksURL = flag.String("jwks", "http://127.0.0.1:3001/.well-known/jwks.json", "The URL for fetching public keys as JWKS")
+	addr     = flag.String("addr", ":3000", "Set the listening address")
+	jwksURL  = flag.String("jwks", "http://127.0.0.1:3001/.well-known/jwks.json", "The URL for fetching public keys as JWKS")
+	mongoURI = flag.String("mongoURI", "mongo://your-connection-string/", "This is the mongo connection URI")
 )
 
 func init() {
@@ -25,7 +26,7 @@ func main() {
 	signal.Notify(sigChan)
 
 	// Create server
-	s := todoserver.NewServer(*addr, *jwksURL)
+	s := todoserver.NewServer(*addr, *jwksURL, *mongoURI)
 
 	// Start the server in a new goroutine
 	go func() {
