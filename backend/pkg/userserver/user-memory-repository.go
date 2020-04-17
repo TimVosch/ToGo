@@ -32,7 +32,7 @@ func (repo *UserMemoryRepository) GetUserByEmail(email string) *User {
 }
 
 // GetUserByID ...
-func (repo *UserMemoryRepository) GetUserByID(id int64) *User {
+func (repo *UserMemoryRepository) GetUserByID(id interface{}) *User {
 	for _, v := range repo.store {
 		if v.ID == id {
 			return &v

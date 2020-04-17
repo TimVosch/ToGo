@@ -52,14 +52,14 @@ func createJWT(key *rsa.PrivateKey) (*jwt.Signer, *jwt.Verifier) {
 }
 
 // NewServer creates a new server
-func NewServer(addr, privKeyPath string) *UserServer {
+func NewServer(addr, privKeyPath, mongoURI string) *UserServer {
 	// Set up
 	router := mux.NewRouter()
 	httpServer := &http.Server{
 		Addr:    addr,
 		Handler: router,
 	}
-	repo := NewUserMemoryRepository()
+	repo := NewUserMongoRepository(mongoURI, "togo", "users")
 
 	// JWT and JWK
 	key := readKey(privKeyPath)

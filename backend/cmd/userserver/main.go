@@ -13,6 +13,7 @@ import (
 var (
 	addr        = flag.String("addr", ":3000", "Set the listening address")
 	privKeyPath = flag.String("privkey", "./private.pem", "Path to the private RSA key")
+	mongoURI    = flag.String("mongoURI", "mongo://your-connection-string/", "This is the mongo connection URI")
 )
 
 func init() {
@@ -25,7 +26,7 @@ func main() {
 	signal.Notify(sigChan)
 
 	// Create server
-	us := userserver.NewServer(*addr, *privKeyPath)
+	us := userserver.NewServer(*addr, *privKeyPath, *mongoURI)
 
 	// Start the server in a new goroutine
 	go func() {
